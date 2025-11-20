@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: sage
+Version: 1.0
+Summary: Smart Home Agent with Grounded Execution
+Author: SAIC Montreal
+License: CC-BY-NV 3.0
+Keywords: LLMs,Autonomous Agents,IoT,Multi-modal
+Requires-Python: >=3.10,<3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# SAGE
+
+Code repository for the paper [AIoT Smart Home via Autonomous LLM Agents](https://arxiv.org/abs/2311.00772), in which we introduce **SAGE** (**S**mart Home **A**gent with **G**rounded **E**xecution).
+
+# Usage
+
+## Installation
+
+SAGE is tested using Python 3.10.
+
