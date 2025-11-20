@@ -49,6 +49,7 @@ from sage.coordinators.sage_coordinator import SAGECoordinatorConfig
 from baselines.coordinators.sasha_coordinator import SashaCoordinatorConfig
 from sage.testing.testcases import get_tests
 from sage.testing.testcases import TEST_REGISTER
+from sage.testing.testcases import TEST_CASE_TYPES
 from sage.testing.testing_utils import current_save_dir
 from sage.testing.testing_utils import get_base_device_state
 from sage.testing.testing_utils import get_min_device_state
@@ -108,7 +109,7 @@ class TestDemoConfig:
     # whether to skip failed testcases when resuming
     skip_failed: bool = True
     # whether to include human interaction test cases
-    include_human_interaction: bool = False
+    include_human_interaction: bool = True
     # whether to include gmail and google calendar test cases
     enable_google: bool = False
 
@@ -125,6 +126,7 @@ class TestDemoConfig:
 
         if self.coordinator_type.name == "SAGE":
             coord_kwargs["enable_google"] = self.enable_google
+            coord_kwargs["enable_human_interaction"] = self.include_human_interaction
         self.coordinator_config = self.coordinator_type.value(**coord_kwargs)
 
     def print_to_terminal(self):
@@ -208,10 +210,41 @@ def main(test_demo_config: TestDemoConfig):
         google_cases = get_tests(["google"])
         test_cases = list(set(test_cases) - set(google_cases))
 
+
+    # test_cases = test_cases[:10]
     for case_func in test_cases:
+        CONSOLE.print(f"Starting : {case_func}")
+        case = case_func.__name__
+
+        if case in test_log:
+            result = test_log[case]["result"]
+
+            if (result == "success") and test_demo_config.skip_passed:
+                CONSOLE.print("pass success")
+
+                continue
+
+            if (result == "failure") and test_demo_config.skip_failed:
+                CONSOLE.print("pass failure")
+
+            if "error" not in test_log[case]:
+                continue
+            error_message = test_log[case]["error"]
+
+            if not (
+                ("choices" in error_message)
+                or ("Client.generate()" in error_message)
+                or ("ChatAnthropic" in error_message)
+                or ("HTTPConnectionPool" in error_message)
+            ):
+                continue
+
+        case_types = list(TEST_CASE_TYPES.get(case, []))
+        BaseConfig.global_config.current_test_case = case
+        BaseConfig.global_config.current_test_types = case_types
+        BaseConfig.global_config.human_interaction_stats = {"success": 0, "failure": 0}
+
         try:
-            CONSOLE.print(f"Starting : {case_func}")
-            case = case_func.__name__
             # Use reduced state for OnePromptCoordinator to avoid input with > tokens
 
             if isinstance(
@@ -221,29 +254,6 @@ def main(test_demo_config: TestDemoConfig):
             else:
                 # SAGE or Sasha
                 device_state = deepcopy(get_base_device_state())
-
-            if case in test_log:
-                result = test_log[case]["result"]
-
-                if (result == "success") and test_demo_config.skip_passed:
-                    CONSOLE.print("pass success")
-
-                    continue
-
-                if (result == "failure") and test_demo_config.skip_failed:
-                    CONSOLE.print("pass failure")
-
-                if "error" not in test_log[case]:
-                    continue
-                error_message = test_log[case]["error"]
-
-                if not (
-                    ("choices" in error_message)
-                    or ("Client.generate()" in error_message)
-                    or ("ChatAnthropic" in error_message)
-                    or ("HTTPConnectionPool" in error_message)
-                ):
-                    continue
 
             start_time = time.time()
 
@@ -264,6 +274,18 @@ def main(test_demo_config: TestDemoConfig):
                 "error": str(e),
             }
             CONSOLE.log(f"[red]\ncase {case} Fail \U0001F914")
+        finally:
+            stats = getattr(BaseConfig.global_config, "human_interaction_stats", None)
+
+            if (stats is not None) and (case in test_log):
+                test_log[case]["human_interaction_tool_calls"] = dict(stats)
+
+            BaseConfig.global_config.current_test_case = None
+            BaseConfig.global_config.current_test_types = []
+            BaseConfig.global_config.human_interaction_stats = {
+                "success": 0,
+                "failure": 0,
+            }
 
         merge_test_types(test_log)
         with open(save_path, "w") as f:

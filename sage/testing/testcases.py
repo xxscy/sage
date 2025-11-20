@@ -8,6 +8,7 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 from io import StringIO
+from collections import defaultdict
 from typing import Any
 from typing import Callable
 
@@ -50,6 +51,8 @@ TEST_REGISTER = {
     "google": set(),
 }
 
+TEST_CASE_TYPES: dict[str, set[str]] = defaultdict(set)
+
 
 def get_test_challenges(test_name: str):
     """
@@ -70,6 +73,7 @@ def register(names: list[str]):
     def wrapper(f):
         for name in names:
             TEST_REGISTER[name].add(f)
+            TEST_CASE_TYPES[f.__name__].add(name)
 
         return f
 

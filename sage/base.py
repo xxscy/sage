@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import field
 from typing import Any
 from typing import ClassVar
 from typing import Dict
@@ -46,6 +47,12 @@ class GlobalConfig:
     docmanager_cache_path: Path = Path(os.getenv("SMARTHOME_ROOT")).joinpath(
     "external_api_docs/cached_real_docmanager.json"
 )
+
+    current_test_case: str = None
+    current_test_types: list[str] = field(default_factory=list)
+    human_interaction_stats: dict[str, int] = field(
+        default_factory=lambda: {"success": 0, "failure": 0}
+    )
 
 
 @dataclass

@@ -16,17 +16,23 @@ from langchain.vectorstores import Chroma, FAISS
 from sage.utils.common import CONSOLE
 
 
-def _safe_remove_dir(vector_dir: str, retries: int = 5, wait_seconds: float = 1.0) -> None:
-    """Attempt to remove a directory while dealing with Windows file locking."""
+def _safe_remove_dir(
+    vector_dir: str, retries: int = 5, wait_seconds: float = 1.0
+) -> bool:
+    """Attempt to remove a directory while dealing with Windows file locking.
+
+    Returns:
+        bool: True if the directory was removed, False otherwise.
+    """
 
     if not os.path.isdir(vector_dir):
-        return
+        return True
 
     for attempt in range(1, retries + 1):
         try:
             shutil.rmtree(vector_dir)
             CONSOLE.log(f"Removed existing vector db at {vector_dir}")
-            return
+            return True
         except PermissionError as exc:
             CONSOLE.log(
                 f"[yellow]Warning: attempt {attempt}/{retries} to delete {vector_dir} failed: {exc}"
@@ -55,6 +61,13 @@ def _safe_remove_dir(vector_dir: str, retries: int = 5, wait_seconds: float = 1.
     with contextlib.suppress(OSError):
         os.rmdir(vector_dir)
 
+    success = not os.path.isdir(vector_dir)
+    if not success:
+        CONSOLE.log(
+            f"[red]Could not fully remove locked vector db at {vector_dir}; keeping directory for inspection."
+        )
+    return success
+
 
 def build_chroma_db(
     vector_dir: str,
@@ -66,16 +79,26 @@ def build_chroma_db(
 
     os.makedirs(vector_dir, exist_ok=True)
 
+    target_dir = vector_dir
+
     if not load and os.path.isdir(vector_dir):
-        _safe_remove_dir(vector_dir)
-        os.makedirs(vector_dir, exist_ok=True)
+        removed = _safe_remove_dir(vector_dir)
+        if removed:
+            os.makedirs(vector_dir, exist_ok=True)
+        else:
+            timestamp = int(time.time())
+            target_dir = f"{vector_dir}_{timestamp}"
+            CONSOLE.log(
+                f"[yellow]Using fallback vector db directory {target_dir} to avoid locked files."
+            )
+            os.makedirs(target_dir, exist_ok=True)
 
     for attempt in range(5):
         try:
-            if load and os.path.isdir(vector_dir) and os.listdir(vector_dir):
-                CONSOLE.log(f"Loading vector db from {vector_dir}....")
+            if load and os.path.isdir(target_dir) and os.listdir(target_dir):
+                CONSOLE.log(f"Loading vector db from {target_dir}....")
                 db = Chroma(
-                    persist_directory=vector_dir,
+                    persist_directory=target_dir,
                     embedding_function=embeddings,
                 )
 
@@ -85,11 +108,11 @@ def build_chroma_db(
                         db.persist()
                 return db
 
-            CONSOLE.log(f"Creating vector db in {vector_dir}...")
+            CONSOLE.log(f"Creating vector db in {target_dir}...")
             db = Chroma.from_documents(
                 documents or [Document(page_content="")],
                 embeddings,
-                persist_directory=vector_dir,
+                persist_directory=target_dir,
             )
             if hasattr(db, "persist"):
                 db.persist()
