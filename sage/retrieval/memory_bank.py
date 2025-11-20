@@ -7,6 +7,7 @@ The memory bank consists of the following components:
 import os
 import json
 import glob
+import gc
 from typing import List
 from collections import defaultdict
 from langchain.schema.document import Document
@@ -23,6 +24,7 @@ class MemoryBank:
         self.user_profiler = UserProfiler()
         self.indexes = defaultdict(list)
         self.snapshot_id = 0
+        self.indexes_dirty = True
 
     def _load_user_queries(self, user_name: str, directory: str):
         """
@@ -53,6 +55,7 @@ class MemoryBank:
         if os.path.isfile(memory_path) and memory_path.endswith(".json"):
             # Load saved json file
             self.history = json.load(open(memory_path))
+            self.indexes_dirty = True
 
         elif os.path.isdir(memory_path):
             sources = glob.glob(f"{memory_path}/*")
@@ -69,6 +72,7 @@ class MemoryBank:
                     user_name = "all"
 
                 self._load_user_queries(user_name, source)
+            self.indexes_dirty = True
         else:
             raise ValueError(f"Invalid memory path {memory_path}. Please check ")
 
@@ -82,6 +86,7 @@ class MemoryBank:
             self.history[user_name]["history"][date] = []
 
         self.history[user_name]["history"][date].append(query)
+        self.indexes_dirty = True
 
     def _build_user_profiles(self):
         """Build the user profiles based on the saved interactions"""
@@ -107,6 +112,7 @@ class MemoryBank:
 
         for user_name, data in self.history.items():
             self.user_profiler.global_profiles[user_name] = data["profile"]
+        self.indexes_dirty = True
 
     def save(self, save_path: str):
         """Saves the memory into a json file"""
@@ -146,15 +152,28 @@ class MemoryBank:
 
         return documents
 
+    def _dispose_indexes(self):
+        """Release references so vector DB files can be cleaned up on Windows."""
+        if self.indexes:
+            self.indexes = defaultdict(list)
+            gc.collect()
+
     def create_indexes(
         self, vectorstore: str, embedding_model: str, load: bool = True
     ) -> None:
         """Create seperate indexes for each user"""
+        if not load and not self.indexes_dirty:
+            return
+
+        if not load:
+            self._dispose_indexes()
+
         documents = self.prepare_for_vector_db()
         emb_function = load_embedding_model(model_name=embedding_model)
         self.indexes = create_multiuser_vector_indexes(
             vectorstore, documents, emb_function, load=load
         )
+        self.indexes_dirty = False
 
     def search(self, user_name: str, query: str, top_k=5) -> List[str]:
         """Get the most relevant memories"""

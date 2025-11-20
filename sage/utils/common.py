@@ -104,10 +104,11 @@ def function2string(function_handle: str, code_define: str) -> str:
 
 
 @lru_cache(maxsize=None)
-def load_embedding_model(model_name: str):
+def load_embedding_model(model_name: str, device: str = "cpu"):
     """Builds an embedding model and cache it"""
 
-    return HuggingFaceEmbeddings(model_name=model_name)
+    model_kwargs = {"device": device} if device else {}
+    return HuggingFaceEmbeddings(model_name=model_name, model_kwargs=model_kwargs)
 
 
 class Timeliner:

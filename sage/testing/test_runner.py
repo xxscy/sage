@@ -184,7 +184,7 @@ def main(test_demo_config: TestDemoConfig):
         test_log = {}
 
     os.makedirs(save_dir, exist_ok=True)
-    now_str = str(datetime.now())
+    now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
     save_detail_dir = save_dir.joinpath(now_str)
     save_path = save_detail_dir.joinpath(now_str + ".json")
     os.makedirs(save_detail_dir)
