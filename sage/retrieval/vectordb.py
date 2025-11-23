@@ -99,8 +99,8 @@ def build_chroma_db(
                 CONSOLE.log(f"Loading vector db from {target_dir}....")
                 db = Chroma(
                     persist_directory=target_dir,
-                    embedding_function=embeddings,
-                )
+            embedding_function=embeddings,
+        )
 
                 if documents:
                     db.add_documents(documents)
@@ -173,21 +173,14 @@ def create_multiuser_vector_indexes(
 
     user_indexes = {}
 
-    smarthome_root = os.getenv("SMARTHOME_ROOT")
-    if not smarthome_root:
-        CONSOLE.log("[red]SMARTHOME_ROOT environment variable is not set")
-        return user_indexes
-
     for user_name, memories in documents.items():
-        user_index_dir = os.path.join(smarthome_root, "user_info", user_name, vectordb)
+        user_index_dir = os.path.join(
+            f"{os.getenv('SMARTHOME_ROOT')}", "user_info", user_name, vectordb
+        )
 
-        try:
-            user_indexes[user_name] = VECTORDBS[vectordb](
-                user_index_dir, memories, embedding_model, load=load
-            )
-        except Exception as exc:
-            CONSOLE.log(
-                f"[red]Failed to create vector index for user {user_name}: {exc}"
-            )
+        # Create the index
+        user_indexes[user_name] = VECTORDBS[vectordb](
+            user_index_dir, memories, embedding_model, load=load
+        )
 
     return user_indexes

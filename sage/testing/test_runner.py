@@ -213,38 +213,9 @@ def main(test_demo_config: TestDemoConfig):
 
     # test_cases = test_cases[:10]
     for case_func in test_cases:
-        CONSOLE.print(f"Starting : {case_func}")
-        case = case_func.__name__
-
-        if case in test_log:
-            result = test_log[case]["result"]
-
-            if (result == "success") and test_demo_config.skip_passed:
-                CONSOLE.print("pass success")
-
-                continue
-
-            if (result == "failure") and test_demo_config.skip_failed:
-                CONSOLE.print("pass failure")
-
-            if "error" not in test_log[case]:
-                continue
-            error_message = test_log[case]["error"]
-
-            if not (
-                ("choices" in error_message)
-                or ("Client.generate()" in error_message)
-                or ("ChatAnthropic" in error_message)
-                or ("HTTPConnectionPool" in error_message)
-            ):
-                continue
-
-        case_types = list(TEST_CASE_TYPES.get(case, []))
-        BaseConfig.global_config.current_test_case = case
-        BaseConfig.global_config.current_test_types = case_types
-        BaseConfig.global_config.human_interaction_stats = {"success": 0, "failure": 0}
-
         try:
+            CONSOLE.print(f"Starting : {case_func}")
+            case = case_func.__name__
             # Use reduced state for OnePromptCoordinator to avoid input with > tokens
 
             if isinstance(
@@ -254,6 +225,35 @@ def main(test_demo_config: TestDemoConfig):
             else:
                 # SAGE or Sasha
                 device_state = deepcopy(get_base_device_state())
+
+            if case in test_log:
+                result = test_log[case]["result"]
+
+                if (result == "success") and test_demo_config.skip_passed:
+                    CONSOLE.print("pass success")
+
+                    continue
+
+                if (result == "failure") and test_demo_config.skip_failed:
+                    CONSOLE.print("pass failure")
+
+                if "error" not in test_log[case]:
+                    continue
+                error_message = test_log[case]["error"]
+
+                if not (
+                    ("choices" in error_message)
+                    or ("Client.generate()" in error_message)
+                    or ("ChatAnthropic" in error_message)
+                    or ("HTTPConnectionPool" in error_message)
+                ):
+                    continue
+
+            # Set global state for the test case
+            case_types = list(TEST_CASE_TYPES.get(case, []))
+            BaseConfig.global_config.current_test_case = case
+            BaseConfig.global_config.current_test_types = case_types
+            BaseConfig.global_config.human_interaction_stats = {"success": 0, "failure": 0}
 
             start_time = time.time()
 
