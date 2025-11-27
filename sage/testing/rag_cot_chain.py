@@ -6,18 +6,28 @@ RAG 系统的 COT 链，用于判断是否需要使用 human_interaction_tool �
 中文 COT prompt 中，让 LLM 判断是否需要使用 human_interaction_tool
 来澄清用户问题。
 """
+import csv
 import inspect
 import json
 import os
 import re
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional, Set
+from types import SimpleNamespace
+TV_GUIDE_PATH = Path(__file__).with_name("tv_guide.csv")
+_TV_GUIDE_CACHE: Optional[List[Dict[str, str]]] = None
+
 
 from langchain.schema.messages import HumanMessage
+from langchain.utilities import OpenWeatherMapAPIWrapper
 
+from sage.base import BaseConfig, GlobalConfig
+from sage.coordinators.sage_coordinator import SAGECoordinatorConfig
+from sage.smartthings.smartthings_tool import SmartThingsPlannerToolConfig
 from sage.testing.testcases import TEST_CASE_TYPES, get_tests
 from sage.utils.llm_utils import GPTConfig, LLMConfig
 from sage.utils.common import CONSOLE
@@ -44,6 +54,7 @@ class RAGCOTConfig:
     )
     max_test_cases: Optional[int] = None  # 限制本次评估的测试用例数量
     device_lookup_max_results: int = 3
+    default_weather_location: str = "quebec city, Canada"
 
 
 class ContextUnderstandingTool:
@@ -95,12 +106,24 @@ class ContextUnderstandingTool:
 
 
 class DeviceLookupTool:
-    """基于 DocManager 与 fake_requests 设备快照的轻量检索工具"""
+    """基于 SmartThings Planner + DocManager 的设备检索工具"""
 
-    def __init__(self, *, docmanager_cache_path: Path, max_results: int = 3):
+    def __init__(
+        self,
+        *,
+        docmanager_cache_path: Path,
+        max_results: int = 3,
+        planner_llm_config: Optional[LLMConfig] = None,
+    ):
         self.doc_manager = DocManager.from_json(docmanager_cache_path)
         self.max_results = max_results
         self.device_state: Dict[str, Any] = {}
+        self.docmanager_cache_path = docmanager_cache_path
+        self.smartthings_planner = None
+        if planner_llm_config is not None:
+            self.smartthings_planner = self._build_smartthings_planner(
+                planner_llm_config
+            )
 
     def update_device_state(self, device_state: Optional[Dict[str, Any]]):
         self.device_state = device_state or {}
@@ -108,6 +131,9 @@ class DeviceLookupTool:
     def run(self, query: str) -> str:
         if not query:
             return "DeviceLookupTool: query is empty."
+        planner_result = self._planner_lookup(query)
+        if planner_result is not None:
+            return planner_result
         return self._search_devices(query)
 
     def _search_devices(self, query: str) -> str:
@@ -236,6 +262,188 @@ class DeviceLookupTool:
             f"State: {state_summary}"
         )
 
+    def _build_smartthings_planner(self, planner_llm_config: LLMConfig):
+        _ensure_tool_global_config(self.docmanager_cache_path)
+        planner_config = SmartThingsPlannerToolConfig(
+            llm_config=planner_llm_config,
+        )
+        try:
+            return planner_config.instantiate()
+        except Exception as exc:
+            CONSOLE.log(f"[yellow]SmartThingsPlannerTool 初始化失败，退回关键词检索: {exc}")
+            return None
+
+    def _planner_lookup(self, query: str) -> Optional[str]:
+        if self.smartthings_planner is None:
+            return None
+        try:
+            plan_output = self.smartthings_planner.run(query.strip())
+        except Exception as exc:
+            CONSOLE.log(f"[yellow]SmartThings planner 查询失败: {exc}")
+            return None
+
+        device_ids = self._extract_device_ids_from_plan(plan_output)
+        if not device_ids:
+            return None
+
+        lines = []
+        for device_id in device_ids[: self.max_results]:
+            metadata = self._build_device_metadata(device_id)
+            lines.append(
+                self._format_device_line(
+                    device_id=device_id,
+                    metadata=metadata,
+                    score=5.0,  # Planner 已经筛选，无需再算分
+                )
+            )
+        plan_details = self._extract_section(plan_output, "Plan")
+        explanation = self._extract_section(plan_output, "Explanation")
+        if plan_details:
+            lines.append(f"Planner plan: {plan_details}")
+        if explanation:
+            lines.append(f"Planner notes: {explanation}")
+        return "\n".join(lines)
+
+    def _extract_device_ids_from_plan(self, plan_output: str) -> List[str]:
+        device_section = self._extract_section(plan_output, "Device Ids")
+        if not device_section:
+            return []
+        candidates = re.findall(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", device_section, flags=re.IGNORECASE)
+        seen = set()
+        ordered = []
+        for device_id in candidates:
+            device_id = device_id.lower()
+            if device_id in seen:
+                continue
+            if device_id not in self.doc_manager.device_names:
+                continue
+            seen.add(device_id)
+            ordered.append(device_id)
+        return ordered
+
+    def _extract_section(self, text: str, header: str) -> Optional[str]:
+        pattern = rf"{header}:(.*?)(?:\n[A-Z][A-Za-z ]+:|\Z)"
+        match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
+        if not match:
+            return None
+        content = match.group(1).strip()
+        return content if content else None
+
+
+def _is_device_lookup_failure(message: str) -> bool:
+    """快速检测设备检索是否失败（用于提示 planner 避免重复查询）。"""
+    if not message:
+        return True
+    stripped = message.strip()
+    lowered = stripped.lower()
+    failure_markers = [
+        "未找到",
+        "not found",
+        "unavailable",
+        "query is empty",
+        "error",
+    ]
+    if stripped.startswith("DeviceLookupTool:"):
+        return True
+    return any(marker in lowered for marker in failure_markers)
+
+
+def _summarize_device_lookup_notes(
+    device_lookup_notes: Optional[List[str]], max_entries: int = 3
+) -> str:
+    """将最近的设备检索结果压缩成提示文本，方便 planner 复用或调整。"""
+    if not device_lookup_notes:
+        return "(no device lookup attempts yet)"
+
+    tail = device_lookup_notes[-max_entries:]
+    start_idx = len(device_lookup_notes) - len(tail) + 1
+    lines = []
+    if len(device_lookup_notes) > max_entries:
+        lines.append(
+            f"(showing last {len(tail)} of {len(device_lookup_notes)} attempts)"
+        )
+
+    for offset, note in enumerate(tail, start=start_idx):
+        label = "FAIL" if _is_device_lookup_failure(note) else "OK"
+        stripped = note.strip()
+        if not stripped:
+            snippet = "(empty result)"
+        else:
+            first_line = stripped.splitlines()[0]
+            snippet = first_line if len(first_line) < 160 else first_line[:157] + "..."
+            if "\n" in stripped:
+                snippet += " ..."
+        lines.append(f"{label}#{offset}: {snippet}")
+
+    return "\n".join(lines)
+
+
+def _summarize_failure_notes(
+    failure_notes: Optional[List[str]], max_entries: int = 3
+) -> str:
+    if not failure_notes:
+        return "(no failed or exhausted retrievals)"
+
+    tail = failure_notes[-max_entries:]
+    lines: List[str] = []
+    if len(failure_notes) > max_entries:
+        lines.append(
+            f"(showing last {len(tail)} of {len(failure_notes)} failures/exhausted attempts)"
+        )
+
+    start_idx = len(failure_notes) - len(tail) + 1
+    for offset, note in enumerate(tail, start=start_idx):
+        snippet = _shorten_text(note, 180) or "(empty failure note)"
+        lines.append(f"#{offset}: {snippet}")
+    return "\n".join(lines)
+
+
+def _is_weather_lookup_failure(message: str) -> bool:
+    if not message:
+        return True
+    lowered = message.lower()
+    if lowered.startswith("weatherlookuptool error"):
+        return True
+    failure_markers = [
+        "unavailable",
+        "unable to find",
+        "missing or invalid",
+    ]
+    return any(marker in lowered for marker in failure_markers)
+
+
+class WeatherLookupTool:
+    """封装 OpenWeatherMap 的简易天气检索工具"""
+
+    def __init__(self, default_location: str = "quebec city, Canada"):
+        self.default_location = default_location
+        try:
+            self.api = OpenWeatherMapAPIWrapper()
+            self.available = True
+        except Exception as exc:
+            CONSOLE.log(f"[red]初始化 WeatherLookupTool 失败: {exc}")
+            self.available = False
+            self.api = None
+
+    def run(self, location: Optional[str]) -> str:
+        if not self.available or self.api is None:
+            return "WeatherLookupTool unavailable: OpenWeatherMap API key missing or invalid."
+        query = (location or self.default_location).strip()
+        if not query:
+            query = self.default_location
+        try:
+            report = self.api.run(query)
+            return f"Weather report for {query}:\n{report}"
+        except Exception as exc:
+            return (
+                f"WeatherLookupTool error for '{query}': {exc}. "
+                "Ensure input follows 'City, Country'."
+            )
+
+
+class _InitialStateCapture(Exception):
+    """内部异常，用于截获 testcase.setup 调用后的设备状态"""
+
 
 def _sanitize_filename(name: str) -> str:
     """将任意字符串转换为安全的文件/文件夹名"""
@@ -257,6 +465,626 @@ def _summarize_device_state(device_state: Optional[Dict[str, Any]]) -> str:
             sample_keys += ", ..."
         return f"{len(keys)} entries: {sample_keys}"
     return f"(device state type: {type(device_state).__name__})"
+
+
+def _extract_capability_value(components: Dict[str, Any], capability: str, attribute: str) -> Optional[Any]:
+    """从设备组件信息中提取指定能力属性的最近值。"""
+    for comp_data in components.values():
+        cap_data = comp_data.get(capability)
+        if not cap_data:
+            continue
+        attr_data = cap_data.get(attribute)
+        if isinstance(attr_data, dict):
+            return attr_data.get("value")
+    return None
+
+
+def _build_device_state_focus(
+    device_state: Optional[Dict[str, Any]],
+    doc_manager: Optional[DocManager],
+    max_devices: int = 8,
+) -> str:
+    """
+    构建强调 on/off、音量、亮度等关键信息的设备状态摘要，便于上游 prompt 明确当前局势。
+    """
+    if not device_state:
+        return "(device state unavailable)"
+
+    entries: List[Tuple[int, str]] = []
+    for device_id, components in device_state.items():
+        name = (
+            doc_manager.device_names.get(device_id, device_id)
+            if doc_manager and getattr(doc_manager, "device_names", None)
+            else device_id
+        )
+        switch_val = _extract_capability_value(components, "switch", "switch")
+        level_val = _extract_capability_value(components, "switchLevel", "level")
+        volume_val = _extract_capability_value(components, "audioVolume", "volume")
+        mute_val = _extract_capability_value(components, "audioMute", "mute")
+        channel_val = _extract_capability_value(components, "tvChannel", "tvChannel")
+
+        status_parts = []
+        if switch_val is not None:
+            status_parts.append(f"switch={switch_val}")
+        if level_val is not None:
+            status_parts.append(f"level={level_val}")
+        if volume_val is not None:
+            status_parts.append(f"volume={volume_val}")
+        if mute_val is not None:
+            status_parts.append(f"mute={mute_val}")
+        if channel_val:
+            status_parts.append(f"channel={channel_val}")
+
+        if not status_parts:
+            continue
+
+        priority = 0
+        if isinstance(switch_val, str) and switch_val.lower() == "on":
+            priority += 3
+        if isinstance(level_val, (int, float)) and level_val > 0:
+            priority += 1
+        if isinstance(volume_val, (int, float)) and volume_val > 0:
+            priority += 1
+
+        entries.append((priority, f"- {name} ({device_id}): {', '.join(status_parts)}"))
+
+    if not entries:
+        return "(no actionable device states found)"
+
+    entries.sort(key=lambda item: item[0], reverse=True)
+    trimmed = [line for _, line in entries[:max_devices]]
+    if len(entries) > max_devices:
+        trimmed.append(f"(其余 {len(entries) - max_devices} 台设备省略)")
+    return "\n".join(trimmed)
+
+
+def _serialize_for_compare(value: Any) -> str:
+    if value is None:
+        return "None"
+    if isinstance(value, (dict, list)):
+        try:
+            return json.dumps(value, ensure_ascii=False, sort_keys=True)
+        except (TypeError, ValueError):
+            return str(value)
+    return str(value)
+
+
+def _shorten_text(text: str, limit: int = 120) -> str:
+    if not text:
+        return ""
+    stripped = text.strip()
+    if len(stripped) <= limit:
+        return stripped
+    return stripped[: limit - 3] + "..."
+
+
+MAX_REPEAT_QUERIES = 3
+MAX_FAILURES_PER_ACTION = 2
+def _normalize_query_text(text: Optional[str]) -> str:
+    if not text:
+        return ""
+    normalized = re.sub(r"\s+", " ", text.lower()).strip()
+    return normalized
+
+
+def _record_failure_note(
+    action: str,
+    message: str,
+    failure_notes: List[str],
+    action_failure_counts: Dict[str, int],
+) -> None:
+    failure_notes.append(message)
+    action_failure_counts[action] = action_failure_counts.get(action, 0) + 1
+
+
+def _should_skip_query(
+    action: str,
+    query: Optional[str],
+    query_attempts: Dict[Tuple[str, str], int],
+    failure_notes: List[str],
+    action_failure_counts: Dict[str, int],
+) -> bool:
+    normalized = _normalize_query_text(query)
+    if not normalized:
+        return False
+    key = (action, normalized)
+    current = query_attempts.get(key, 0)
+    if current >= MAX_REPEAT_QUERIES:
+        _record_failure_note(
+            action,
+            f"{action} '{_shorten_text(query, 80)}' skipped: repeated {current} times without new info",
+            failure_notes,
+            action_failure_counts,
+        )
+        return True
+    query_attempts[key] = current + 1
+    return False
+
+
+DEVICE_CATEGORY_RULES: Dict[str, Dict[str, Any]] = {
+    "lights": {
+        "label": "灯光",
+        "command_keywords": (
+            "light",
+            "lights",
+            "lamp",
+            "lighting",
+            "chandelier",
+            "sconce",
+            "bedside light",
+            "dining light",
+        ),
+        "name_keywords": (
+            "light",
+            "lamp",
+            "sconce",
+            "chandelier",
+            "bulb",
+        ),
+        "capability_keywords": (
+            "switchlevel",
+            "colorcontrol",
+            "colortemperature",
+            "switch",
+        ),
+        "state_attributes": [
+            ("switch", "switch", "switch"),
+            ("switchLevel", "level", "level"),
+            ("colorTemperature", "colorTemperature", "color_temp"),
+            ("colorControl", "hue", "hue"),
+            ("colorControl", "saturation", "saturation"),
+        ],
+        "attribute_keywords": {
+            "switch": ("turn off", "turn on", "power", "switch"),
+            "level": ("dim", "bright", "brightness", "level"),
+            "color_temp": ("warm", "cool", "temperature", "white"),
+        },
+    },
+    "tv": {
+        "label": "电视",
+        "command_keywords": (
+            "tv",
+            "television",
+            "frame tv",
+            "channel",
+            "volume",
+            "screen",
+        ),
+        "name_keywords": (
+            "tv",
+            "television",
+            "frame",
+            "screen",
+        ),
+        "capability_keywords": (
+            "audiovolume",
+            "audiomute",
+            "mediainputsource",
+            "tvchannel",
+            "mediaplayback",
+        ),
+        "state_attributes": [
+            ("switch", "switch", "switch"),
+            ("audioVolume", "volume", "volume"),
+            ("audioMute", "mute", "mute"),
+            ("tvChannel", "tvChannel", "channel"),
+            ("mediaInputSource", "inputSource", "input"),
+        ],
+        "attribute_keywords": {
+            "volume": (
+                "volume",
+                "quieter",
+                "louder",
+                "loud",
+                "soft",
+            ),
+            "channel": ("channel", "station"),
+            "input": ("input", "source", "hdmi"),
+            "switch": ("turn on", "turn off", "power"),
+        },
+    },
+    "dishwasher": {
+        "label": "洗碗机",
+        "command_keywords": (
+            "dishwasher",
+            "dishes",
+            "dish washing",
+        ),
+        "name_keywords": (
+            "dishwasher",
+            "dishes",
+        ),
+        "capability_keywords": (
+            "dishwasheroperatingstate",
+            "switch",
+            "execute",
+        ),
+        "state_attributes": [
+            ("switch", "switch", "switch"),
+            ("dishwasherOperatingState", "machineState", "machine_state"),
+            ("dishwasherOperatingState", "cycleRemainingTime", "remaining_time"),
+        ],
+        "attribute_keywords": {
+            "machine_state": ("mode", "cycle", "phase", "state"),
+            "switch": ("start", "stop", "turn on", "turn off"),
+        },
+    },
+    "fridge": {
+        "label": "冰箱",
+        "command_keywords": (
+            "fridge",
+            "refrigerator",
+            "freezer",
+        ),
+        "name_keywords": (
+            "fridge",
+            "refrigerator",
+            "freezer",
+        ),
+        "capability_keywords": (
+            "temperaturemeasurement",
+            "thermostatcoolingsetpoint",
+            "contactsensor",
+        ),
+        "state_attributes": [
+            ("temperatureMeasurement", "temperature", "temperature"),
+            ("thermostatCoolingSetpoint", "coolingSetpoint", "cooling_setpoint"),
+            ("contactSensor", "contact", "door"),
+        ],
+        "attribute_keywords": {
+            "temperature": ("temperature", "degree", "cold"),
+            "cooling_setpoint": ("set", "adjust", "change"),
+            "door": ("door", "open", "close"),
+        },
+    },
+    "fireplace": {
+        "label": "壁炉/火炉",
+        "command_keywords": (
+            "fireplace",
+            "fire place",
+            "fire",
+        ),
+        "name_keywords": (
+            "fireplace",
+            "fire place",
+        ),
+        "capability_keywords": (
+            "switch",
+            "switchlevel",
+        ),
+        "state_attributes": [
+            ("switch", "switch", "switch"),
+            ("switchLevel", "level", "level"),
+        ],
+        "attribute_keywords": {
+            "switch": ("turn on", "turn off", "ignite", "power"),
+            "level": ("dim", "bright", "intensity", "level"),
+        },
+    },
+}
+
+
+def _detect_target_device_categories(command: str) -> List[str]:
+    if not command:
+        return []
+    lowered = command.lower()
+    detected: List[str] = []
+    for key, rule in DEVICE_CATEGORY_RULES.items():
+        for keyword in rule.get("command_keywords", []):
+            if keyword and keyword in lowered:
+                detected.append(key)
+                break
+    return detected
+
+
+def _infer_device_categories_from_metadata(
+    device_name: str,
+    doc_capabilities: Optional[List[Dict[str, Any]]],
+    components: Optional[Dict[str, Any]],
+) -> Set[str]:
+    categories: Set[str] = set()
+    name_lower = device_name.lower()
+    capability_tokens: Set[str] = set()
+    for cap in doc_capabilities or []:
+        cap_id = cap.get("capability_id")
+        if cap_id:
+            capability_tokens.add(cap_id.lower())
+    if components:
+        for comp_data in components.values():
+            for cap_name in comp_data.keys():
+                capability_tokens.add(cap_name.lower())
+
+    for key, rule in DEVICE_CATEGORY_RULES.items():
+        if any(kw in name_lower for kw in rule.get("name_keywords", [])):
+            categories.add(key)
+            continue
+        if capability_tokens.intersection(rule.get("capability_keywords", [])):
+            categories.add(key)
+    return categories
+
+
+def _select_attribute_specs(
+    rule: Dict[str, Any],
+    command_lower: str,
+) -> Tuple[List[Tuple[str, str, str]], List[str]]:
+    focus_labels: List[str] = []
+    for label, keywords in (rule.get("attribute_keywords") or {}).items():
+        for keyword in keywords:
+            if keyword and keyword in command_lower:
+                focus_labels.append(label)
+                break
+    specs = [
+        spec for spec in rule.get("state_attributes", []) if spec[2] in focus_labels
+    ]
+    if not specs:
+        specs = rule.get("state_attributes", [])
+    return specs, focus_labels
+
+
+def _format_state_values_for_specs(
+    components: Dict[str, Any],
+    specs: List[Tuple[str, str, str]],
+) -> List[str]:
+    values: List[str] = []
+    for capability, attribute, label in specs:
+        value = _extract_capability_value(components, capability, attribute)
+        if value is None:
+            continue
+        values.append(f"{label}={value}")
+    return values
+
+
+def _collect_target_device_context(
+    command: str,
+    categories: List[str],
+    device_state: Optional[Dict[str, Any]],
+    doc_manager: Optional[DocManager],
+) -> str:
+    if not device_state:
+        return "(device state unavailable)"
+    if doc_manager is None:
+        return "(DocManager unavailable for device context)"
+    if not categories:
+        return "(no device category keywords detected in command)"
+
+    command_lower = command.lower()
+    lines: List[str] = []
+
+    for category_key in categories:
+        rule = DEVICE_CATEGORY_RULES.get(category_key)
+        if not rule:
+            continue
+        specs, focus_labels = _select_attribute_specs(rule, command_lower)
+        if focus_labels:
+            focus_text = ", ".join(dict.fromkeys(focus_labels))
+        else:
+            focus_text = ", ".join(
+                dict.fromkeys(spec[2] for spec in specs)
+            )
+        lines.append(f"[{rule['label']}] 重点属性: {focus_text or '状态未知'}")
+        matched = False
+        for device_id, components in device_state.items():
+            device_name = (
+                doc_manager.device_names.get(device_id, device_id)
+                if getattr(doc_manager, "device_names", None)
+                else device_id
+            )
+            doc_caps = doc_manager.device_capabilities.get(device_id) if getattr(
+                doc_manager, "device_capabilities", None
+            ) else None
+            device_categories = _infer_device_categories_from_metadata(
+                device_name,
+                doc_caps,
+                components,
+            )
+            if category_key not in device_categories:
+                continue
+            values = _format_state_values_for_specs(components, specs)
+            if not values:
+                continue
+            matched = True
+            lines.append(f"- {device_name}: {', '.join(values)}")
+        if not matched:
+            lines.append("- (未找到匹配设备或缺少可用状态)")
+    return "\n".join(lines)
+
+
+def _build_target_device_context(
+    command: str,
+    device_state: Optional[Dict[str, Any]],
+    doc_manager: Optional[DocManager],
+) -> Tuple[List[str], str]:
+    categories = _detect_target_device_categories(command)
+    context = _collect_target_device_context(
+        command=command,
+        categories=categories,
+        device_state=device_state,
+        doc_manager=doc_manager,
+    )
+    return categories, context
+
+
+def _ensure_tool_global_config(docmanager_cache_path: Path) -> None:
+    """确保 smartthings 相关工具具备所需的 global_config 配置。"""
+    if getattr(BaseConfig, "global_config", None) is None:
+        BaseConfig.global_config = GlobalConfig()
+
+    if (
+        BaseConfig.global_config.docmanager_cache_path is None
+        or BaseConfig.global_config.docmanager_cache_path != docmanager_cache_path
+    ):
+        BaseConfig.global_config.docmanager_cache_path = docmanager_cache_path
+
+    if BaseConfig.global_config.condition_server_url is None:
+        BaseConfig.global_config.condition_server_url = os.getenv(
+            "CONDITION_SERVER_URL", "http://localhost:5001"
+        )
+
+    if BaseConfig.global_config.logpath is None:
+        log_root = Path(os.getenv("SMARTHOME_ROOT", ".")).joinpath(
+            "logs", "rag_smartthings_planner"
+        )
+        log_root.mkdir(parents=True, exist_ok=True)
+        BaseConfig.global_config.logpath = str(log_root)
+
+@dataclass
+class _LightweightTestConfig:
+    """仿照 test_runner 中的 TestDemoConfig，仅保留评估所需的最小字段。"""
+
+    coordinator_config: Any
+    evaluator_llm: Any
+
+
+_STATE_CAPTURE_TEST_CONFIG: Optional[_LightweightTestConfig] = None
+
+
+def _get_state_capture_test_config() -> _LightweightTestConfig:
+    """
+    构造与 test_runner 行为一致的最小配置，确保 coordinator_config 可用。
+    该配置会被缓存复用，避免重复构造开销。
+    """
+
+    global _STATE_CAPTURE_TEST_CONFIG
+    if _STATE_CAPTURE_TEST_CONFIG is not None:
+        return _STATE_CAPTURE_TEST_CONFIG
+
+    if getattr(BaseConfig, "global_config", None) is None:
+        BaseConfig.global_config = GlobalConfig()
+
+    if BaseConfig.global_config.condition_server_url is None:
+        BaseConfig.global_config.condition_server_url = os.getenv(
+            "CONDITION_SERVER_URL", "http://localhost:5001"
+        )
+
+    if BaseConfig.global_config.logpath is None:
+        BaseConfig.global_config.logpath = str(
+            Path(os.getenv("SMARTHOME_ROOT", ".")).joinpath(
+                "logs", "rag_state_capture"
+            )
+        )
+
+    coordinator_config = SAGECoordinatorConfig(
+        llm_config=GPTConfig(model_name="gpt-4o-mini", temperature=0.0, streaming=False),
+        run_mode="test",
+        enable_human_interaction=True,
+        enable_google=False,
+    )
+
+    evaluator_stub = lambda *_args, **_kwargs: SimpleNamespace(
+        content="stubbed evaluator (unused during state capture)"
+    )
+
+    _STATE_CAPTURE_TEST_CONFIG = _LightweightTestConfig(
+        coordinator_config=coordinator_config,
+        evaluator_llm=evaluator_stub,
+    )
+    return _STATE_CAPTURE_TEST_CONFIG
+
+
+def _prepare_device_state_for_test(test_case: "TestCaseInfo") -> Dict[str, Any]:
+    """
+    尝试复用 testcases.py 中的初始化逻辑，生成特定测试用例的设备状态。
+    我们在调用 testcase.setup 前截获 device_state，从而获得与真实测试一致的初始状态。
+    """
+    if getattr(test_case, "_prepared_state", None) is not None:
+        return deepcopy(test_case._prepared_state)
+
+    base_state = deepcopy(get_base_device_state())
+
+    try:
+        from sage.testing import testcases as testcase_module
+    except Exception as exc:
+        CONSOLE.log(f"[red]导入 testcases 失败，使用默认设备状态: {exc}")
+        test_case._prepared_state = base_state
+        return deepcopy(base_state)
+
+    test_func = getattr(testcase_module, test_case.name, None)
+    if not callable(test_func):
+        test_case._prepared_state = base_state
+        return deepcopy(base_state)
+
+    original_setup = getattr(testcase_module, "setup", None)
+    captured_state: Optional[Dict[str, Any]] = None
+
+    def fake_setup(device_state, *_args, **_kwargs):
+        nonlocal captured_state
+        captured_state = deepcopy(device_state)
+        raise _InitialStateCapture
+
+    testcase_module.setup = fake_setup  # type: ignore[attr-defined]
+
+    try:
+        dummy_config = deepcopy(_get_state_capture_test_config())
+        try:
+            test_func(deepcopy(base_state), dummy_config)
+        except _InitialStateCapture:
+            pass
+        except Exception as exc:
+            CONSOLE.log(
+                f"[red]执行 {test_case.name} 初始化逻辑失败，使用默认状态: {exc}"
+            )
+            captured_state = None
+    finally:
+        if original_setup is not None:
+            testcase_module.setup = original_setup  # type: ignore[attr-defined]
+
+    prepared = captured_state or base_state
+    test_case._prepared_state = prepared
+    return deepcopy(prepared)
+
+
+def _load_tv_guide() -> List[Dict[str, str]]:
+    global _TV_GUIDE_CACHE
+    if _TV_GUIDE_CACHE is not None:
+        return _TV_GUIDE_CACHE
+    entries: List[Dict[str, str]] = []
+    if not TV_GUIDE_PATH.exists():
+        _TV_GUIDE_CACHE = entries
+        return entries
+    with TV_GUIDE_PATH.open("r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            entries.append(row)
+    _TV_GUIDE_CACHE = entries
+    return entries
+
+
+def build_tv_guide_knowledge(user_command: str, max_entries: int = 10) -> str:
+    """
+    根据用户指令检索电视节目表，返回自然语言知识摘要。
+    """
+    entries = _load_tv_guide()
+    if not entries:
+        return "(tv guide unavailable)"
+
+    keywords = {
+        token.lower()
+        for token in re.findall(r"[A-Za-z]+", user_command)
+        if token
+    }
+
+    def score_entry(entry: Dict[str, str]) -> float:
+        haystack = " ".join(
+            [
+                entry.get("channel_name", ""),
+                entry.get("program_name", ""),
+                entry.get("program_desc", ""),
+            ]
+        ).lower()
+        if not haystack:
+            return 0.0
+        match_count = sum(1 for kw in keywords if kw and kw in haystack)
+        return match_count + 0.1  # 平滑，保证在无匹配时保持原顺序
+
+    ranked = sorted(entries, key=score_entry, reverse=True)
+    selected = ranked[:max_entries] if keywords else entries[:max_entries]
+    lines = []
+    for entry in selected:
+        lines.append(
+            f"频道{entry.get('channel_number')} {entry.get('channel_name')} → "
+            f"{entry.get('program_name')} | {entry.get('program_desc')}"
+        )
+    return "\n".join(lines)
 
 
 def extract_user_name_from_command(command: str) -> Optional[str]:
@@ -315,6 +1143,7 @@ class TestCaseInfo:
         self.requires_human_interaction = "human_interaction" in types
         # 离线评估时的设备状态快照（来自 testing_utils 中的 device_state pickle）
         self.device_state = device_state or {}
+        self._prepared_state: Optional[Dict[str, Any]] = None
 
 
 def extract_user_command_from_test(test_func) -> str:
@@ -449,6 +1278,120 @@ def load_test_cases() -> List[TestCaseInfo]:
     return test_cases
 
 
+def build_intent_analysis_prompt(
+    test_case: TestCaseInfo,
+    user_preferences: Optional[Dict[str, Any]] = None,
+    user_memory_snippets: Optional[List[str]] = None,
+    context_summary: Optional[str] = None,
+    device_lookup_notes: Optional[List[str]] = None,
+    environment_overview: Optional[str] = None,
+    tv_guide_knowledge: Optional[str] = None,
+    weather_reports: Optional[List[str]] = None,
+    device_state_focus: Optional[str] = None,
+    target_device_context: Optional[str] = None,
+) -> str:
+    """
+    构建用户深层意图分析的 prompt，供 LLM 生成结构化意图描述。
+    """
+    preferences_text = (
+        "(no user preference information available)"
+        if not user_preferences
+        else str(user_preferences)
+    )
+    memory_text = (
+        "(no historical interactions related to the current command)"
+        if not user_memory_snippets
+        else "\n".join(user_memory_snippets)
+    )
+    context_summary_text = (
+        context_summary if context_summary else "(context summary unavailable)"
+    )
+    device_lookup_text = (
+        "(device lookup tool not used)"
+        if not device_lookup_notes
+        else "\n".join(device_lookup_notes)
+    )
+    environment_text = (
+        environment_overview if environment_overview else "(environment overview unavailable)"
+    )
+    tv_guide_text = (
+        tv_guide_knowledge if tv_guide_knowledge else "(tv guide knowledge unavailable)"
+    )
+    weather_text = (
+        "\n".join(weather_reports)
+        if weather_reports
+        else "(weather lookup not used)"
+    )
+    device_state_focus_text = (
+        device_state_focus if device_state_focus else "(device state focus unavailable)"
+    )
+    target_device_context_text = (
+        target_device_context if target_device_context else "(targeted device context unavailable)"
+    )
+
+    return f"""You are the intent analysis module.
+Base your reasoning ONLY on the facts below and describe the user's objective with zero ambiguity.
+If any reference (it/this/they/the game/etc.) or subjective wording could map to multiple targets, explicitly call it out and assess the risk of acting without clarification.
+
+Facts:
+- Command: "{test_case.user_command}"
+- Preferences / device facts: {preferences_text}
+- History: {memory_text}
+- Device lookup: {device_lookup_text}
+- Context summary: {context_summary_text}
+- Environment overview: {environment_text}
+- Device state focus (real-time power / volume / brightness cues): {device_state_focus_text}
+- Target devices mentioned in the command (with highlighted states): {target_device_context_text}
+- Weather lookup findings: {weather_text}
+- TV guide knowledge: {tv_guide_text}
+
+Respond with exactly three lines:
+Intent: <full, concrete description of everything the user expects, spelled out clearly with no pronouns or vague phrases>
+Constraints & cues: <detail implicit goals, context triggers, personalization hints; include exact devices/locations if known>
+Risk assessment: <if any reference or detail is uncertain, spell out the ambiguity and potential failure; write "None" only when no risk remains>"""
+
+
+def build_environment_overview_prompt(
+    *,
+    test_case: TestCaseInfo,
+    device_lookup_notes: Optional[List[str]] = None,
+    device_state: Optional[Dict[str, Any]] = None,
+    target_device_context: Optional[str] = None,
+) -> str:
+    """
+    生成设备/环境自然语言概览，帮助 LLM 理解当前可操作的设备与状态。
+    """
+    lookup_text = (
+        "\n".join(device_lookup_notes)
+        if device_lookup_notes
+        else "(device lookup not used)"
+    )
+    device_state_text = _summarize_device_state(device_state)
+    target_context_text = (
+        target_device_context
+        if target_device_context
+        else "(no targeted device context generated)"
+    )
+    return f"""You are building an environment briefing for a smart home assistant.
+Summarize, in plain Chinese, what devices and capabilities are currently known from retrieval,
+their approximate locations (if names give hints like "by the credenza" or "Frame TV"),
+and any salient state (power, input source, volume, brightness, modes). Use only the facts provided.
+
+Details to ground your summary:
+- User command: "{test_case.user_command}"
+- Device lookup notes (include DocManager capability metadata when useful):
+{lookup_text}
+- Device state snapshot (from fake_requests): {device_state_text}
+- Target devices extracted from the user command (emphasize these states first):
+{target_context_text}
+
+Output 2 concise paragraphs:
+1) Detected devices & locations: enumerate each identified device, what it is, where it is, and relevant APIs/capabilities inferred from the metadata.
+2) Current state & control cues: describe on/off status, levels, input sources, or other state values that may matter for fulfilling the command.
+
+Avoid speculation. Use declarative sentences in Chinese so downstream modules can reference this briefing directly."""
+
+
 def build_cot_prompt(
     test_case: TestCaseInfo,
     user_preferences: Optional[Dict[str, Any]] = None,
@@ -456,6 +1399,12 @@ def build_cot_prompt(
     examples: List[TestCaseInfo] = None,  # 保留参数以保持兼容性，但不再使用（零样本模式）
     context_summary: Optional[str] = None,
     device_lookup_notes: Optional[List[str]] = None,
+    intent_analysis: Optional[str] = None,
+    environment_overview: Optional[str] = None,
+    tv_guide_knowledge: Optional[str] = None,
+    weather_reports: Optional[List[str]] = None,
+    device_state_focus: Optional[str] = None,
+    target_device_context: Optional[str] = None,
 ) -> str:
     """
     构建 COT（Chain of Thought）推理提示词。
@@ -492,6 +1441,34 @@ def build_cot_prompt(
     context_summary_text = (
         context_summary if context_summary else "(context summary unavailable)"
     )
+    intent_analysis_text = (
+        intent_analysis
+        if intent_analysis
+        else "(intent analysis unavailable)"
+    )
+    environment_text = (
+        environment_overview
+        if environment_overview
+        else "(environment overview unavailable)"
+    )
+    tv_guide_text = (
+        tv_guide_knowledge
+        if tv_guide_knowledge
+        else "(tv guide knowledge unavailable)"
+    )
+    weather_text = (
+        "\n".join(weather_reports)
+        if weather_reports
+        else "(weather lookup not used)"
+    )
+    device_state_focus_text = (
+        device_state_focus if device_state_focus else "(device state focus unavailable)"
+    )
+    target_device_context_text = (
+        target_device_context
+        if target_device_context
+        else "(targeted device context unavailable)"
+    )
 
     base_prompt = f"""You are the decision module of a smart home assistant.
 Only the information retrieved by earlier planner/tool calls is available to you now.
@@ -503,53 +1480,46 @@ Your task:
 2. Apply deep reasoning to infer the user's underlying intent and situational context.
 3. Decide whether you need to call the `human_interaction_tool` to ask the user clarifying questions.
 
-CRITICAL: Deep Intent Inference
-Before deciding to ask for clarification, you MUST perform deep reasoning about the user's situation and intent:
+Core Reasoning Principles:
+Before deciding to ask for clarification, you MUST perform deep reasoning using these principles:
 
-1. **Situational Context Analysis**: Consider the broader context implied by the command.
-   - Identify situational cues: incoming communications (calls, messages), time-based activities (sleep, meals, work), environmental states (too bright/cold/hot/loud), or activity transitions.
-   - Infer corrective intent: When users mention problems or transitions, they typically want actions that address the issue or facilitate the transition.
-   - Apply reverse logic: Complaints about environmental conditions imply the user wants the opposite state (too bright → dimmer, too loud → quieter, too cold → warmer).
+1. **Situational Context Analysis**: Analyze the broader context implied by the command.
+   - Identify situational cues: communication events, activity transitions, environmental states, or task contexts.
+   - Infer corrective or facilitative intent: When users mention problems or transitions, infer actions that address the issue or facilitate the transition.
+   - Apply reverse logic: Complaints about conditions imply the user wants the opposite state.
 
 2. **Common Sense Reasoning**: Apply everyday logic and social conventions.
-   - Communication interference: During active communication, audio adjustments typically aim to reduce interference (lower volume, mute).
-   - Environmental complaints: Negative qualifiers ("too X") indicate desire for opposite adjustment.
-   - Activity-based preferences: Activities like sleeping, working, or relaxing have associated environmental preferences (darker/quieter for sleep, appropriate lighting for work).
-   - Task-appropriate settings: When users request "appropriate" or "suitable" settings for a task, infer settings that match the task's requirements (intensive cleaning for heavy soil, comfortable levels for general use).
+   - Use domain knowledge about typical user behaviors and preferences in similar situations.
+   - Infer task-appropriate settings based on the nature of the requested activity.
+   - Apply social conventions and cultural norms relevant to the context.
 
 3. **Default Action Inference**: When a specific value is missing but the intent is clear, infer a reasonable default action.
-   - Directional adjustments: If direction is clear (reduce, increase, dim, brighten), apply moderate changes (typically 30-50% of current value or range).
-   - Task-appropriate modes: For tasks requiring specific modes, select the mode that best matches the task characteristics (intensive for heavy-duty, gentle for delicate).
-   - Comfort thresholds: For subjective terms like "comfortable" or "appropriate", use industry-standard defaults or mid-range values.
+   - For directional adjustments: Apply moderate changes when direction is clear but magnitude is unspecified.
+   - For task-appropriate modes: Select modes that match the task characteristics.
+   - For subjective terms: Use industry-standard defaults or mid-range values.
 
-4. **Contextual Disambiguation**: Use the situation to resolve ambiguity.
-   - Pronoun resolution: Resolve pronouns ("it", "this", "that") by matching to recently mentioned devices, active devices, or contextually prominent items.
-   - Implicit references: When users refer to items without explicit naming ("the game", "that show"), match to recent context, active content, or user history.
-   - Temporal continuity: Assume references maintain continuity with recent interactions unless explicitly contradicted.
+4. **Contextual Disambiguation**: Use available context to resolve ambiguity.
+   - Resolve pronouns and implicit references by matching to recently mentioned items, active devices, or contextually prominent elements.
+   - Assume temporal continuity: References maintain continuity with recent interactions unless explicitly contradicted.
+   - Leverage device lookup results when available.
 
-Use `human_interaction_tool` ONLY in these situations:
-1. Ambiguous reference: pronouns like "it", "this", "that" cannot be resolved even with deep reasoning and context.
-2. Missing personalization info: critical user preferences are missing AND cannot be inferred from common sense (e.g., "my favourite color" when no color preference exists).
-3. Non-standard expressions: truly unclear slang or creative wording that defies reasonable interpretation (uncommon neologisms, regional slang, or creative expressions without sufficient context to infer meaning).
-4. Multiple valid interpretations: the command genuinely has multiple reasonable meanings that cannot be distinguished by context.
+Risk-Aware Decision Rule:
+Use `human_interaction_tool` ONLY when there exists a genuine, unresolvable ambiguity that prevents action.
+This means the ambiguity cannot be resolved through:
+- Deep reasoning about situational context
+- Common sense inference
+- Contextual disambiguation using available information
+- Application of reasonable defaults
 
-Do NOT use `human_interaction_tool` when:
-1. The command is explicit and provides all necessary details.
-2. Common sense and situational context allow you to infer the intent (directional adjustments during specific situations, environmental corrections, activity-based preferences).
-3. You can apply reasonable defaults based on the situation (task-appropriate modes, comfort-level settings, moderate adjustments).
-4. The context (device state, recent interactions, situational cues) disambiguates the command.
-5. The missing information is a specific value, but the direction/intent is clear (adjustment direction is inferable, task requirements are clear).
+Before finalizing a "Do not need" decision, confirm that:
+- Every critical requirement (target entity, action parameters, personalization constraints) is either explicitly provided or backed by high-confidence inference.
+- No equally plausible alternative interpretation remains unresolved.
+- Executing without clarification will not risk incorrect or unsafe behavior.
 
-Enhanced Confidence Heuristics:
-- **Situational inference**: If the command mentions a situation (communication events, activity transitions, environmental states), infer the obvious corrective or facilitative action based on common sense.
-- **Directional inference**: If the command specifies a direction (adjust, change, set) but not a value, infer the direction from context (reduce interference during communication, correct environmental extremes, facilitate activity transitions).
-- **Default value inference**: When direction is clear but value is missing, use reasonable defaults (moderate percentage adjustments, task-appropriate intensity levels, industry-standard comfort ranges).
-- **Device disambiguation**: If device lookup returns a single high-scoring match, treat it as the target.
-- **Preference mapping**: Map subjective terms to user preferences when available, or to common defaults when not.
-- **Environmental complaints**: Assume the obvious corrective action (reverse the complained condition: too bright→dimmer, too loud→quieter, too cold→warmer).
-- **Status queries**: Answer directly from device state—no preferences needed.
+When in doubt between autonomous action and clarification, prefer calling `human_interaction_tool`.
 
-Your STRONG bias should be to solve the command autonomously using deep reasoning and common sense. Only ask for clarification when there is a genuine, unresolvable ambiguity that prevents action.
+Your STRONG bias should be to solve the command autonomously using deep reasoning and common sense.
+Only ask for clarification when there is a genuine, unresolvable ambiguity that prevents action.
 
 Below is the information already retrieved for you (do NOT call additional tools; reason only with what is provided):
 
@@ -565,6 +1535,23 @@ Below is the information already retrieved for you (do NOT call additional tools
 - Context understanding summary (generated from targeted retrievals):
 {context_summary_text}
 
+- Deep intent hypothesis (generated by the dedicated intent analysis module):
+{intent_analysis_text}
+
+- Environment briefing (devices, locations, states summarized from DocManager metadata):
+{environment_text}
+- Device state focus (real-time on/off/levels to resolve ambiguity):
+{device_state_focus_text}
+
+- Command-targeted device context (grouped states for mentioned device types):
+{target_device_context_text}
+
+- TV program guide knowledge base:
+{tv_guide_text}
+
+- Weather lookup findings:
+{weather_text}
+
 Using the above context, analyze the user command with explicit Chain-of-Thought reasoning:
 
 User command: "{test_case.user_command}"
@@ -572,16 +1559,9 @@ User command: "{test_case.user_command}"
 Reasoning steps:
 1. **Surface-level analysis**: Identify key verbs, nouns, adjectives, pronouns, and explicit parameters in the command.
 2. **Deep intent inference**: Analyze the situational context and underlying user intent. What is the user really trying to achieve? What does the situation imply about the desired action?
-   - Consider: What is happening in the user's environment? (communication events, activity transitions, environmental states, task contexts)
-   - Infer: What action would make sense in this situation? (reducing interference, facilitating transitions, correcting environmental issues, matching task requirements)
-   - Apply: Common sense reasoning about what the user likely wants based on situational patterns and social conventions.
-3. **Information gap analysis**: Identify what specific information is missing (if any). Can this gap be filled by:
-   - Common sense inference? (directional adjustments during specific situations, task-appropriate settings)
-   - Situational context? (environmental corrections, activity-based preferences)
-   - Reasonable defaults? (moderate adjustments, industry-standard values, task-appropriate modes)
-   - Retrieved preferences/history? (user-specific preferences from database, historical patterns)
-4. **Ambiguity resolution**: Determine if any remaining ambiguity is truly blocking or can be resolved through inference.
-5. **Decision**: Decide whether to call `human_interaction_tool`. Default to "Do not need" when deep reasoning and common sense can resolve the command.
+3. **Information gap analysis**: Identify what specific information is missing (if any). Can this gap be filled by common sense inference, situational context, reasonable defaults, or retrieved preferences/history?
+4. **Ambiguity resolution**: Determine if any remaining ambiguity is truly blocking or can be resolved through inference. Explicitly check whether multiple plausible interpretations or unverifiable assumptions remain.
+5. **Decision**: Decide whether to call `human_interaction_tool`. Default to "Do not need" only when all critical requirements are supported by evidence or high-confidence inference; otherwise choose clarification.
 
 Format your answer exactly as:
 ```
@@ -635,9 +1615,22 @@ def build_chain_planner_prompt(
         "available" if context_state.get("context_summary") else "missing"
     )
 
-    device_fact_status = (
-        "available" if context_state.get("device_facts") else "missing"
+    device_facts_list = context_state.get("device_facts") or []
+    device_fact_status = "available" if device_facts_list else "missing"
+    device_facts_detail = _summarize_device_lookup_notes(device_facts_list)
+    indented_device_facts = "\n".join(
+        f"  {line}" for line in device_facts_detail.splitlines()
     )
+    weather_status = (
+        "available" if context_state.get("weather_facts") else "missing"
+    )
+    device_state_focus_text = (
+        context_state.get("device_state_focus")
+        if context_state.get("device_state_focus")
+        else "(device state focus unavailable)"
+    )
+    failure_notes = context_state.get("failure_notes") or []
+    failure_notes_summary = _summarize_failure_notes(failure_notes)
 
     planner_prompt = f"""You are orchestrating a Chain-of-Thought tool-using loop for the smart home assistant.
 Nothing besides the user command is preloaded. When you need device-specific facts or user preferences,
@@ -657,15 +1650,22 @@ Confidence & efficiency guidelines:
 - **Situational inference**: If the command mentions a situation (communication events, activity transitions, environmental states), infer the obvious action first.
 - **Prefer a single decisive pass**: Once a tool supplies clear device or preference data, reuse it instead of repeating the same lookup.
 - **Avoid redundant queries**: Don't ask for information that can be inferred from context or common sense.
-- **Move to final_decision quickly**: As soon as the intent can be satisfied with existing evidence or inference, proceed to decision.
-- **Autonomy over clarification**: The objective is to keep the assistant autonomous—treat clarification as a last resort.
+- **Handle lookup feedback**: Recent `device_lookup` outputs are listed below. If they failed, adjust the query with new clues or stop repeating the same request.
+- **Move to final_decision when justified**: Transition to the final decision step when the intent can be satisfied with existing evidence or when remaining ambiguities cannot be resolved via available tools.
+- **Balance autonomy and safety**: Favor autonomous solutions when confident, but escalate to clarification whenever critical ambiguity remains to avoid incorrect actions.
 
 Current user command: "{test_case.user_command}"
 
 Retrieved context so far:
 - User preference / device facts: {preference_status}
 - Device lookup insights: {device_fact_status}
+  Latest samples:
+{indented_device_facts}
 - Context summary: {summary_status}
+- Weather lookup insights: {weather_status}
+- Device state focus: {device_state_focus_text}
+- Retrieval issues already encountered:
+{failure_notes_summary}
 
 Available tools (call at most one per step):
 1. preference_lookup -> parameters: {{"query": "<english query string>"}}.
@@ -675,9 +1675,12 @@ Available tools (call at most one per step):
 2. device_lookup -> parameters: {{"query": "<english description of the target device/action>"}}.
    Surfaces relevant SmartThings device IDs, capabilities, and the latest fake_requests device state
    snapshot to help ground ambiguous references like "it" or "the fridge".
-3. context_summary -> no parameters. Generates a consolidated summary using the latest
+3. weather_lookup -> parameters: {{"query": "<City, Country>"}}.
+   Call when the user command depends on current weather or outdoor conditions. If omitted,
+   the system will use the default location configured for evaluation.
+4. context_summary -> no parameters. Generates a consolidated summary using the latest
    user command, retrieved preferences/device facts, and history snippets.
-4. final_decision -> no parameters. Use ONLY when you have enough information to
+5. final_decision -> no parameters. Use ONLY when you have enough information to
    produce the final answer. This will trigger a dedicated decision prompt, so do not
    include the final Need/Do not need wording here.
 
@@ -711,6 +1714,7 @@ def parse_planner_response(response_text: str) -> Dict[str, Any]:
         if action not in {
             "preference_lookup",
             "device_lookup",
+            "weather_lookup",
             "context_summary",
             "final_decision",
         }:
@@ -777,6 +1781,7 @@ def evaluate_test_case(
     user_name: Optional[str] = None,  # 保留参数以保持兼容性，但不再使用（优先从命令中提取）
     examples: List[TestCaseInfo] = None,  # 保留参数以保持兼容性，但不再使用（零样本模式）
     log_base_dir: Optional[Path] = None,
+    weather_lookup_tool: Optional[WeatherLookupTool] = None,
 ) -> Dict[str, Any]:
     """
     评估单个测试用例，判断 LLM 是否正确识别是否需要 human_interaction_tool。
@@ -800,17 +1805,83 @@ def evaluate_test_case(
     user_memory_snippets: List[str] = []
     device_facts: List[str] = []
     context_summary: Optional[str] = None
+    intent_analysis: Optional[str] = None
+    environment_overview: Optional[str] = None
+    tv_guide_knowledge: str = build_tv_guide_knowledge(test_case.user_command)
+    weather_facts: List[str] = []
+    device_state = _prepare_device_state_for_test(test_case)
+    device_lookup_tool.update_device_state(device_state)
+    doc_manager = getattr(device_lookup_tool, "doc_manager", None)
+    device_state_focus = _build_device_state_focus(
+        device_state, doc_manager
+    )
+    target_device_categories, target_device_context = _build_target_device_context(
+        command=test_case.user_command,
+        device_state=device_state,
+        doc_manager=doc_manager,
+    )
+    failure_notes: List[str] = []
+    query_attempts: Dict[Tuple[str, str], int] = {}
+    action_failure_counts: Dict[str, int] = {}
+    halted_actions: Set[str] = set()
 
     chain_history: List[Dict[str, Any]] = []
-    planner_steps_limit = 25
+    planner_steps_limit = 15
     final_response_text = ""
     final_reasoning = ""
     predicted_needs_tool = False
 
     CONSOLE.rule(f"[bold blue]测试用例: {test_case.name}")
     CONSOLE.log(f"[bold]用户指令[/bold]: {test_case.user_command}")
-    device_state_summary = _summarize_device_state(test_case.device_state)
+    device_state_summary = _summarize_device_state(device_state)
     CONSOLE.log(f"[bold]设备状态摘要[/bold]: {device_state_summary}")
+
+    def _generate_environment_overview():
+        nonlocal environment_overview
+        if environment_overview:
+            return environment_overview
+        env_prompt = build_environment_overview_prompt(
+            test_case=test_case,
+            device_lookup_notes=device_facts if device_facts else None,
+            device_state=device_state,
+            target_device_context=target_device_context,
+        )
+        env_message = HumanMessage(content=env_prompt)
+        env_response = llm([env_message])
+        environment_overview = (
+            env_response.content
+            if hasattr(env_response, "content")
+            else str(env_response)
+        )
+        CONSOLE.log(f"[green]环境概览[/green]: {environment_overview}")
+        return environment_overview
+
+    def _generate_intent_analysis():
+        nonlocal intent_analysis
+        if intent_analysis:
+            return intent_analysis
+        _generate_environment_overview()
+        intent_prompt = build_intent_analysis_prompt(
+            test_case=test_case,
+            user_preferences=user_preferences,
+            user_memory_snippets=user_memory_snippets,
+            context_summary=context_summary,
+            device_lookup_notes=device_facts,
+            environment_overview=environment_overview,
+            tv_guide_knowledge=tv_guide_knowledge,
+            weather_reports=weather_facts,
+            device_state_focus=device_state_focus,
+            target_device_context=target_device_context,
+        )
+        intent_message = HumanMessage(content=intent_prompt)
+        intent_response = llm([intent_message])
+        intent_analysis = (
+            intent_response.content
+            if hasattr(intent_response, "content")
+            else str(intent_response)
+        )
+        CONSOLE.log(f"[green]用户意图分析[/green]: {intent_analysis}")
+        return intent_analysis
 
     for step_idx in range(1, planner_steps_limit + 1):
         planner_prompt = build_chain_planner_prompt(
@@ -821,6 +1892,9 @@ def evaluate_test_case(
                 "user_preferences": user_preferences,
                 "context_summary": context_summary,
                 "device_facts": device_facts,
+                "weather_facts": weather_facts,
+                "device_state_focus": device_state_focus,
+                "failure_notes": failure_notes,
             },
         )
         planner_message = HumanMessage(content=planner_prompt)
@@ -846,9 +1920,27 @@ def evaluate_test_case(
             f"thought={planner_decision['thought']}"
         )
 
+        if action in {"preference_lookup", "device_lookup", "weather_lookup"}:
+            if action_failure_counts.get(action, 0) >= MAX_FAILURES_PER_ACTION:
+                if action not in halted_actions:
+                    failure_notes.append(
+                        f"{action} skipped: exceeded failure limit ({MAX_FAILURES_PER_ACTION})"
+                    )
+                    halted_actions.add(action)
+                continue
+
         if action == "preference_lookup":
             query = planner_decision["query"] or preference_query
             CONSOLE.log(f"[yellow]调用 UserProfileTool，query: {query}")
+            prev_pref_snapshot = _serialize_for_compare(user_preferences)
+            if _should_skip_query(
+                action,
+                query,
+                query_attempts,
+                failure_notes,
+                action_failure_counts,
+            ):
+                continue
             try:
                 tool_input = json.dumps(
                     {"query": query, "user_name": effective_user_name},
@@ -861,20 +1953,76 @@ def evaluate_test_case(
                 CONSOLE.log(
                     f"[red]UserProfileTool 调用失败: {exc}"
                 )
+                _record_failure_note(
+                    action,
+                    f"preference_lookup '{_shorten_text(query, 80)}' failed: {exc}",
+                    failure_notes,
+                    action_failure_counts,
+                )
+                continue
+            new_pref_snapshot = _serialize_for_compare(user_preferences)
+            if new_pref_snapshot == prev_pref_snapshot:
+                _record_failure_note(
+                    action,
+                    f"preference_lookup '{_shorten_text(query, 80)}' yielded no new info",
+                    failure_notes,
+                    action_failure_counts,
+                )
             continue
 
         if action == "device_lookup":
             query = planner_decision["query"] or test_case.user_command
+            if _should_skip_query(
+                action,
+                query,
+                query_attempts,
+                failure_notes,
+                action_failure_counts,
+            ):
+                continue
             lookup_result = device_lookup_tool.run(query)
             device_facts.append(lookup_result)
             CONSOLE.log(f"[green]设备检索结果[/green]: {lookup_result}")
+            if _is_device_lookup_failure(lookup_result):
+                _record_failure_note(
+                    action,
+                    f"device_lookup '{_shorten_text(query, 80)}' failed or empty",
+                    failure_notes,
+                    action_failure_counts,
+                )
+            continue
+
+        if action == "weather_lookup":
+            if weather_lookup_tool is None:
+                CONSOLE.log("[red]Weather tool 未配置，忽略该动作")
+                weather_facts.append("Weather tool unavailable during evaluation.")
+            else:
+                query = planner_decision["query"] or weather_lookup_tool.default_location
+                if _should_skip_query(
+                    action,
+                    query,
+                    query_attempts,
+                    failure_notes,
+                    action_failure_counts,
+                ):
+                    continue
+                report = weather_lookup_tool.run(query)
+                weather_facts.append(report)
+                CONSOLE.log(f"[green]天气检索结果[/green]: {report}")
+                if _is_weather_lookup_failure(report):
+                    _record_failure_note(
+                        action,
+                        f"weather_lookup '{_shorten_text(query, 80)}' returned no usable data",
+                        failure_notes,
+                        action_failure_counts,
+                    )
             continue
 
         if action == "context_summary":
             context_summary = context_tool.run(
                 user_command=test_case.user_command,
                 user_preferences=user_preferences,
-                device_state=test_case.device_state,
+                device_state=device_state,
                 user_memory_snippets=user_memory_snippets,
                 device_lookup_notes=device_facts,
             )
@@ -886,12 +2034,13 @@ def evaluate_test_case(
             context_summary = context_tool.run(
                 user_command=test_case.user_command,
                 user_preferences=user_preferences,
-                device_state=test_case.device_state,
+                device_state=device_state,
                 user_memory_snippets=user_memory_snippets,
                 device_lookup_notes=device_facts,
             )
             CONSOLE.log(f"[green]最终决策前生成上下文摘要: {context_summary}")
 
+        _generate_intent_analysis()
         final_prompt = build_cot_prompt(
             test_case=test_case,
             user_preferences=user_preferences,
@@ -899,6 +2048,12 @@ def evaluate_test_case(
             examples=None,  # 零样本模式，不提供示例
             context_summary=context_summary,
             device_lookup_notes=device_facts,
+            intent_analysis=intent_analysis,
+            environment_overview=environment_overview,
+            tv_guide_knowledge=tv_guide_knowledge,
+            weather_reports=weather_facts,
+            device_state_focus=device_state_focus,
+            target_device_context=target_device_context,
         )
         final_message = HumanMessage(content=final_prompt)
         final_response = llm([final_message])
@@ -917,10 +2072,11 @@ def evaluate_test_case(
             context_summary = context_tool.run(
                 user_command=test_case.user_command,
                 user_preferences=user_preferences,
-                device_state=test_case.device_state,
+                device_state=device_state,
                 user_memory_snippets=user_memory_snippets,
                 device_lookup_notes=device_facts,
             )
+        _generate_intent_analysis()
         final_prompt = build_cot_prompt(
             test_case=test_case,
             user_preferences=user_preferences,
@@ -928,6 +2084,11 @@ def evaluate_test_case(
             examples=None,  # 零样本模式，不提供示例
             context_summary=context_summary,
             device_lookup_notes=device_facts,
+            intent_analysis=intent_analysis,
+            environment_overview=environment_overview,
+            tv_guide_knowledge=tv_guide_knowledge,
+            weather_reports=weather_facts,
+            device_state_focus=device_state_focus,
         )
         final_message = HumanMessage(content=final_prompt)
         final_response = llm([final_message])
@@ -962,6 +2123,14 @@ def evaluate_test_case(
         "llm_response": final_response_text,
         "chain_history": chain_history,
         "device_lookup_notes": device_facts,
+        "intent_analysis": intent_analysis,
+        "environment_overview": environment_overview,
+        "tv_guide_knowledge": tv_guide_knowledge,
+        "weather_lookup_notes": weather_facts,
+        "device_state_focus": device_state_focus,
+        "target_device_context": target_device_context,
+        "target_device_categories": target_device_categories,
+        "failure_notes": failure_notes,
     }
 
     # 将日志写入文件（按命令分类）
@@ -990,6 +2159,14 @@ def evaluate_test_case(
                 "llm_response": final_response_text,
                 "chain_history": chain_history,
                 "device_lookup_notes": device_facts,
+                "intent_analysis": intent_analysis,
+                "environment_overview": environment_overview,
+                "tv_guide_knowledge": tv_guide_knowledge,
+                "weather_lookup_notes": weather_facts,
+                "device_state_focus": device_state_focus,
+                "target_device_context": target_device_context,
+                "target_device_categories": target_device_categories,
+                "failure_notes": failure_notes,
             }
 
             log_path.write_text(
@@ -1074,6 +2251,10 @@ def run_rag_cot_evaluation(config: RAGCOTConfig = None) -> Dict[str, Any]:
     device_lookup_tool = DeviceLookupTool(
         docmanager_cache_path=docmanager_cache_path,
         max_results=config.device_lookup_max_results,
+        planner_llm_config=deepcopy(config.llm_config),
+    )
+    weather_lookup_tool = WeatherLookupTool(
+        default_location=config.default_weather_location
     )
     
     # 使用零样本（zero-shot）模式，不提供示例，确保评估公平性
@@ -1089,8 +2270,6 @@ def run_rag_cot_evaluation(config: RAGCOTConfig = None) -> Dict[str, Any]:
     for i, test_case in enumerate(filtered_cases, 1):
         CONSOLE.log(f"[cyan]处理 {i}/{len(filtered_cases)}: {test_case.name}")
         
-        device_lookup_tool.update_device_state(test_case.device_state)
-
         result = evaluate_test_case(
             test_case=test_case,
             llm=llm,
@@ -1101,6 +2280,7 @@ def run_rag_cot_evaluation(config: RAGCOTConfig = None) -> Dict[str, Any]:
             user_name=config.user_name,  # 保留以保持兼容性，但实际会从命令中提取
             examples=None,  # 零样本模式，不提供示例
             log_base_dir=log_base_dir,
+            weather_lookup_tool=weather_lookup_tool,
         )
         results.append(result)
         
