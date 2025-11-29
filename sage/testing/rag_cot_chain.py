@@ -11,6 +11,7 @@ import inspect
 import json
 import os
 import re
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
@@ -49,8 +50,12 @@ class RAGCOTConfig:
     user_name: str = "default_user"
     # 每条指令用于检索用户偏好的查询模板（发送给 LLM，使用英文）
     preference_query_template: str = (
-        "Based on this command, infer what preference-related query should be used "
-        "for retrieval: {user_command}"
+        "You are retrieving stored preferences for the smart-home assistant. "
+        "Return ONLY factual preference statements already in memory related to this command: "
+        "{user_command}\n"
+        "- Do NOT infer, guess, or ask the user anything.\n"
+        "- Do NOT include suggestions, plans, or follow-up questions.\n"
+        "- If no direct preference exists, reply with an explicit '(no preference found)'."
     )
     max_test_cases: Optional[int] = None  # 限制本次评估的测试用例数量
     device_lookup_max_results: int = 3
@@ -95,6 +100,7 @@ class ContextUnderstandingTool:
         )
 
         summary_sections = [
+            "[Factual summary only; do not infer or speculate]",
             f"Command focus: {user_command}",
             f"Preference snapshot: {preference_summary}",
             f"Device environment: {device_summary}",
@@ -558,8 +564,45 @@ def _shorten_text(text: str, limit: int = 120) -> str:
     return stripped[: limit - 3] + "..."
 
 
+def _sanitize_summary_text(value: Any) -> Any:
+    """
+    Remove lines that look like reasoning, questions, or speculative offers from
+    tool outputs that are expected to be factual summaries.
+    """
+    if not isinstance(value, str):
+        return value
+    lines = []
+    speculative_markers = (
+        "would you",
+        "should i",
+        "could you",
+        "can i",
+        "let me",
+        "do you want",
+        "shall i",
+        "maybe",
+        "perhaps",
+        "seems like",
+        "i can",
+        "i will",
+        "i suggest",
+    )
+    for raw_line in value.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        lower_line = line.lower()
+        if "?" in line:
+            continue
+        if any(marker in lower_line for marker in speculative_markers):
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
+
 MAX_REPEAT_QUERIES = 3
 MAX_FAILURES_PER_ACTION = 2
+REQUIRED_RETRIEVALS = ("preference_lookup", "device_lookup")
 def _normalize_query_text(text: Optional[str]) -> str:
     if not text:
         return ""
@@ -599,6 +642,18 @@ def _should_skip_query(
         return True
     query_attempts[key] = current + 1
     return False
+
+
+def _pick_missing_retrieval(
+    action_counts: Dict[str, int],
+    user_preferences: Any,
+    device_facts: List[str],
+) -> Optional[str]:
+    if action_counts.get("preference_lookup", 0) == 0 and not user_preferences:
+        return "preference_lookup"
+    if action_counts.get("device_lookup", 0) == 0 and not device_facts:
+        return "device_lookup"
+    return None
 
 
 DEVICE_CATEGORY_RULES: Dict[str, Dict[str, Any]] = {
@@ -1329,26 +1384,26 @@ def build_intent_analysis_prompt(
         target_device_context if target_device_context else "(targeted device context unavailable)"
     )
 
-    return f"""You are the intent analysis module.
-Base your reasoning ONLY on the facts below and describe the user's objective with zero ambiguity.
-If any reference (it/this/they/the game/etc.) or subjective wording could map to multiple targets, explicitly call it out and assess the risk of acting without clarification.
+    return f"""You are the intent analysis module. Base your reasoning ONLY on the facts below and eliminate any ambiguity.
+History snippets are low-confidence hints; do not treat them as confirmation unless device facts match.
+Call out unresolved references or risks explicitly.
 
 Facts:
 - Command: "{test_case.user_command}"
 - Preferences / device facts: {preferences_text}
-- History: {memory_text}
+- History (low-confidence hints): {memory_text}
 - Device lookup: {device_lookup_text}
 - Context summary: {context_summary_text}
 - Environment overview: {environment_text}
-- Device state focus (real-time power / volume / brightness cues): {device_state_focus_text}
-- Target devices mentioned in the command (with highlighted states): {target_device_context_text}
-- Weather lookup findings: {weather_text}
-- TV guide knowledge: {tv_guide_text}
+- Device state focus: {device_state_focus_text}
+- Targeted device context: {target_device_context_text}
+- Weather: {weather_text}
+- TV guide: {tv_guide_text}
 
 Respond with exactly three lines:
-Intent: <full, concrete description of everything the user expects, spelled out clearly with no pronouns or vague phrases>
-Constraints & cues: <detail implicit goals, context triggers, personalization hints; include exact devices/locations if known>
-Risk assessment: <if any reference or detail is uncertain, spell out the ambiguity and potential failure; write "None" only when no risk remains>"""
+Intent: <precise description of the desired result, including target devices/actions/thresholds>
+Signals: <key clues, personalization hints, situational triggers that justify the intent>
+Risk: <remaining ambiguity or risk; write None only if absolutely clear>"""
 
 
 def build_environment_overview_prompt(
@@ -1372,24 +1427,16 @@ def build_environment_overview_prompt(
         if target_device_context
         else "(no targeted device context generated)"
     )
-    return f"""You are building an environment briefing for a smart home assistant.
-Summarize, in plain Chinese, what devices and capabilities are currently known from retrieval,
-their approximate locations (if names give hints like "by the credenza" or "Frame TV"),
-and any salient state (power, input source, volume, brightness, modes). Use only the facts provided.
-
-Details to ground your summary:
+    return f"""Produce a concise environment briefing (objective, no speculation).
+Use only the data provided:
 - User command: "{test_case.user_command}"
-- Device lookup notes (include DocManager capability metadata when useful):
-{lookup_text}
-- Device state snapshot (from fake_requests): {device_state_text}
-- Target devices extracted from the user command (emphasize these states first):
-{target_context_text}
+- Device lookup notes: {lookup_text}
+- Device snapshot: {device_state_text}
+- Targeted device context: {target_context_text}
 
-Output 2 concise paragraphs:
-1) Detected devices & locations: enumerate each identified device, what it is, where it is, and relevant APIs/capabilities inferred from the metadata.
-2) Current state & control cues: describe on/off status, levels, input sources, or other state values that may matter for fulfilling the command.
-
-Avoid speculation. Use declarative sentences in Chinese so downstream modules can reference this briefing directly."""
+Write two short paragraphs:
+1) Detected devices with inferred locations/capabilities.
+2) Their current states and actionable controls (power, volume, input source, mode, etc.)."""
 
 
 def build_cot_prompt(
@@ -1631,6 +1678,19 @@ def build_chain_planner_prompt(
     )
     failure_notes = context_state.get("failure_notes") or []
     failure_notes_summary = _summarize_failure_notes(failure_notes)
+    retrieval_progress = context_state.get("retrieval_progress") or {}
+
+    def _status(key: str) -> str:
+        return "done" if retrieval_progress.get(key) else "pending"
+
+    coverage_status = "\n".join(
+        [
+            f"- preference_lookup: {_status('preference_lookup')}",
+            f"- device_lookup: {_status('device_lookup')}",
+            f"- context_summary: {_status('context_summary')}",
+            f"- weather_lookup: {_status('weather_lookup')}",
+        ]
+    )
 
     planner_prompt = f"""You are orchestrating a Chain-of-Thought tool-using loop for the smart home assistant.
 Nothing besides the user command is preloaded. When you need device-specific facts or user preferences,
@@ -1638,21 +1698,14 @@ issue focused retrieval instructions via the available tools instead of trying t
 Gather only what is necessary, then hand off to the final decision prompt that determines whether the
 `human_interaction_tool` is required.
 
-IMPORTANT: Deep Reasoning First
-Before requesting additional information, apply deep reasoning about the user's situation and intent:
-- Analyze the situational context: What is happening? (communication events, activity transitions, environmental states, task contexts)
-- Infer the underlying intent: What does the user really want? (reducing interference, facilitating transitions, correcting environmental issues, matching task requirements)
-- Apply common sense: Use everyday logic to fill gaps (directional adjustments during specific situations, environmental corrections, task-appropriate settings)
-- Only retrieve information that is truly needed and cannot be inferred
+Coverage rule:
+- Call each retrieval tool at least once if it is still marked as pending and relevant.
+- Once `preference_lookup`, `device_lookup`, and `context_summary` have each run, avoid repeating them unless you have new evidence.
 
-Confidence & efficiency guidelines:
-- **Reason before retrieving**: Apply deep reasoning and common sense before asking for more information.
-- **Situational inference**: If the command mentions a situation (communication events, activity transitions, environmental states), infer the obvious action first.
-- **Prefer a single decisive pass**: Once a tool supplies clear device or preference data, reuse it instead of repeating the same lookup.
-- **Avoid redundant queries**: Don't ask for information that can be inferred from context or common sense.
-- **Handle lookup feedback**: Recent `device_lookup` outputs are listed below. If they failed, adjust the query with new clues or stop repeating the same request.
-- **Move to final_decision when justified**: Transition to the final decision step when the intent can be satisfied with existing evidence or when remaining ambiguities cannot be resolved via available tools.
-- **Balance autonomy and safety**: Favor autonomous solutions when confident, but escalate to clarification whenever critical ambiguity remains to avoid incorrect actions.
+Reasoning hints:
+- Start from common sense: if a single device satisfies the command, move forward instead of asking for clarification.
+- Use failure notes to pivot: if a lookup already failed, try a different angle or move to `final_decision`.
+- Keep the loop short; favor one decisive pass over repeated probing.
 
 Current user command: "{test_case.user_command}"
 
@@ -1664,6 +1717,8 @@ Retrieved context so far:
 - Context summary: {summary_status}
 - Weather lookup insights: {weather_status}
 - Device state focus: {device_state_focus_text}
+- Retrieval coverage:
+{coverage_status}
 - Retrieval issues already encountered:
 {failure_notes_summary}
 
@@ -1824,6 +1879,13 @@ def evaluate_test_case(
     query_attempts: Dict[Tuple[str, str], int] = {}
     action_failure_counts: Dict[str, int] = {}
     halted_actions: Set[str] = set()
+    retrieval_progress = {
+        "preference_lookup": False,
+        "device_lookup": False,
+        "context_summary": False,
+        "weather_lookup": False,
+    }
+    new_info_since_last_plan = False
 
     chain_history: List[Dict[str, Any]] = []
     planner_steps_limit = 15
@@ -1883,28 +1945,41 @@ def evaluate_test_case(
         CONSOLE.log(f"[green]用户意图分析[/green]: {intent_analysis}")
         return intent_analysis
 
+    required_keys = ("preference_lookup", "device_lookup", "context_summary")
+
     for step_idx in range(1, planner_steps_limit + 1):
-        planner_prompt = build_chain_planner_prompt(
-            test_case=test_case,
-            chain_history=chain_history,
-            preference_query_template=preference_query,
-            context_state={
-                "user_preferences": user_preferences,
-                "context_summary": context_summary,
-                "device_facts": device_facts,
-                "weather_facts": weather_facts,
-                "device_state_focus": device_state_focus,
-                "failure_notes": failure_notes,
-            },
-        )
-        planner_message = HumanMessage(content=planner_prompt)
-        planner_response = llm([planner_message])
-        planner_text = (
-            planner_response.content
-            if hasattr(planner_response, "content")
-            else str(planner_response)
-        )
-        planner_decision = parse_planner_response(planner_text)
+        required_complete = all(retrieval_progress.get(key) for key in required_keys)
+        if required_complete and not new_info_since_last_plan:
+            planner_decision = {
+                "thought": "All required retrievals completed; forcing final decision.",
+                "action": "final_decision",
+                "query": None,
+            }
+            planner_text = json.dumps(planner_decision, ensure_ascii=False)
+        else:
+            planner_prompt = build_chain_planner_prompt(
+                test_case=test_case,
+                chain_history=chain_history,
+                preference_query_template=preference_query,
+                context_state={
+                    "user_preferences": user_preferences,
+                    "context_summary": context_summary,
+                    "device_facts": device_facts,
+                    "weather_facts": weather_facts,
+                    "device_state_focus": device_state_focus,
+                    "failure_notes": failure_notes,
+                    "retrieval_progress": retrieval_progress,
+                },
+            )
+            planner_message = HumanMessage(content=planner_prompt)
+            planner_response = llm([planner_message])
+            planner_text = (
+                planner_response.content
+                if hasattr(planner_response, "content")
+                else str(planner_response)
+            )
+            planner_decision = parse_planner_response(planner_text)
+            new_info_since_last_plan = False
         action = planner_decision["action"]
         chain_history.append(
             {
@@ -1947,6 +2022,7 @@ def evaluate_test_case(
                     ensure_ascii=False,
                 )
                 user_preferences = user_profile_tool.run(tool_input)
+                user_preferences = _sanitize_summary_text(user_preferences)
                 CONSOLE.log(f"[green]User preferences 更新: {user_preferences}")
             except Exception as exc:
                 user_preferences = "(failed to retrieve user preferences)"
@@ -1968,6 +2044,9 @@ def evaluate_test_case(
                     failure_notes,
                     action_failure_counts,
                 )
+            else:
+                new_info_since_last_plan = True
+            retrieval_progress["preference_lookup"] = True
             continue
 
         if action == "device_lookup":
@@ -1990,12 +2069,16 @@ def evaluate_test_case(
                     failure_notes,
                     action_failure_counts,
                 )
+            else:
+                new_info_since_last_plan = True
+            retrieval_progress["device_lookup"] = True
             continue
 
         if action == "weather_lookup":
             if weather_lookup_tool is None:
                 CONSOLE.log("[red]Weather tool 未配置，忽略该动作")
                 weather_facts.append("Weather tool unavailable during evaluation.")
+                retrieval_progress["weather_lookup"] = True
             else:
                 query = planner_decision["query"] or weather_lookup_tool.default_location
                 if _should_skip_query(
@@ -2016,9 +2099,13 @@ def evaluate_test_case(
                         failure_notes,
                         action_failure_counts,
                     )
+                else:
+                    new_info_since_last_plan = True
+                retrieval_progress["weather_lookup"] = True
             continue
 
         if action == "context_summary":
+            prev_context_summary = context_summary
             context_summary = context_tool.run(
                 user_command=test_case.user_command,
                 user_preferences=user_preferences,
@@ -2026,7 +2113,11 @@ def evaluate_test_case(
                 user_memory_snippets=user_memory_snippets,
                 device_lookup_notes=device_facts,
             )
+            context_summary = _sanitize_summary_text(context_summary)
             CONSOLE.log(f"[green]上下文摘要更新: {context_summary}")
+            retrieval_progress["context_summary"] = True
+            if context_summary != prev_context_summary:
+                new_info_since_last_plan = True
             continue
 
         # final_decision 或 fallback
@@ -2038,7 +2129,9 @@ def evaluate_test_case(
                 user_memory_snippets=user_memory_snippets,
                 device_lookup_notes=device_facts,
             )
+            context_summary = _sanitize_summary_text(context_summary)
             CONSOLE.log(f"[green]最终决策前生成上下文摘要: {context_summary}")
+            retrieval_progress["context_summary"] = True
 
         _generate_intent_analysis()
         final_prompt = build_cot_prompt(
@@ -2076,6 +2169,8 @@ def evaluate_test_case(
                 user_memory_snippets=user_memory_snippets,
                 device_lookup_notes=device_facts,
             )
+            context_summary = _sanitize_summary_text(context_summary)
+            retrieval_progress["context_summary"] = True
         _generate_intent_analysis()
         final_prompt = build_cot_prompt(
             test_case=test_case,
@@ -2131,6 +2226,7 @@ def evaluate_test_case(
         "target_device_context": target_device_context,
         "target_device_categories": target_device_categories,
         "failure_notes": failure_notes,
+        "retrieval_progress": retrieval_progress,
     }
 
     # 将日志写入文件（按命令分类）
