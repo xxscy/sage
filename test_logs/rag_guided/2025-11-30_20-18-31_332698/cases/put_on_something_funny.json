@@ -1,0 +1,17 @@
+{
+  "test_name": "put_on_something_funny",
+  "types": [
+    "device_resolution",
+    "intent_resolution"
+  ],
+  "requires_human_interaction_ground_truth": false,
+  "rag_prediction": true,
+  "rag_reasoning": "```\nReasoning:\nStep 1 - Surface-level analysis: The command includes the user \"Dmitriy,\" the action \"play,\" the object \"something funny,\" and the location \"the TV by the plant.\" The key elements are the action (play), the content type (funny), and the specific device location (TV by the plant).\n\nStep 2 - Deep intent inference: Dmitriy wants to watch a comedy show on a TV located near a plant. Given his preference for comedy, it is reasonable to infer that he is looking for light-hearted entertainment. The mention of \"the TV by the plant\" suggests he has a specific TV in mind, but we do not know which of the two TVs is closer to the plant.\n\nStep 3 - Information gap analysis: The critical missing information is which TV is \"by the plant.\" Both TVs are powered on, but the Samsung 8 Series (82) is muted, which means it would require unmuting to play anything. The command does not specify which TV to use, creating a gap that needs to be filled.\n\nStep 4 - Ambiguity resolution: The ambiguity regarding which TV to use is significant because it affects the ability to play the content. Since both TVs are available, I can either search for content on both or ask for clarification. However, the command does not provide enough context to determine which TV is preferred, and the muted state of one TV complicates the situation.\n\nStep 5 - Decision: Given the ambiguity about which TV is \"by the plant\" and the need to unmute the Samsung 8 Series (82) for playback, I will opt to call for clarification to ensure the correct action is taken.\n\nConclusion:\nNeed to use human_interaction_tool\n\nReason:\nThere is genuine ambiguity regarding which TV is \"by the plant,\" and I need to confirm this to avoid incorrect playback or user dissatisfaction.\n```",
+  "human_interaction_enabled": true,
+  "execution_result": "success",
+  "error": null,
+  "human_interaction_tool_calls": {
+    "success": 0,
+    "failure": 1
+  }
+}

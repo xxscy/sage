@@ -8,6 +8,7 @@ import os
 import json
 import glob
 import gc
+import time
 from typing import List
 from collections import defaultdict
 from langchain.schema.document import Document
@@ -159,7 +160,11 @@ class MemoryBank:
             gc.collect()
 
     def create_indexes(
-        self, vectorstore: str, embedding_model: str, load: bool = True
+        self,
+        vectorstore: str,
+        embedding_model: str,
+        load: bool = True,
+        force_new_index_dir: bool = False,
     ) -> None:
         """Create seperate indexes for each user"""
         if not load and not self.indexes_dirty:
@@ -171,7 +176,11 @@ class MemoryBank:
         documents = self.prepare_for_vector_db()
         emb_function = load_embedding_model(model_name=embedding_model)
         self.indexes = create_multiuser_vector_indexes(
-            vectorstore, documents, emb_function, load=load
+            vectorstore,
+            documents,
+            emb_function,
+            load=load,
+            force_new_dir=force_new_index_dir,
         )
         self.indexes_dirty = False
 

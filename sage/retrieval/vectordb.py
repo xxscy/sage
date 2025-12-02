@@ -7,6 +7,7 @@ import os
 import time
 from pathlib import Path
 from typing import Dict, List
+import time
 
 import shutil
 from langchain.docstore.document import Document
@@ -168,19 +169,32 @@ def create_multiuser_vector_indexes(
     documents: Dict[str, List[Document]],
     embedding_model: Embeddings,
     load: bool = True,
+    force_new_dir: bool = False,
 ):
     """Creates a vector index that offers similarity search"""
 
     user_indexes = {}
 
     for user_name, memories in documents.items():
-        user_index_dir = os.path.join(
+        base_dir = os.path.join(
             f"{os.getenv('SMARTHOME_ROOT')}", "user_info", user_name, vectordb
         )
+        builder_load = load
+        if force_new_dir:
+            suffix = int(time.time())
+            user_index_dir = f"{base_dir}_run_{suffix}"
+            builder_load = True
+        else:
+            user_index_dir = base_dir
 
         # Create the index
+        os.makedirs(user_index_dir, exist_ok=True)
+
         user_indexes[user_name] = VECTORDBS[vectordb](
-            user_index_dir, memories, embedding_model, load=load
+            user_index_dir,
+            memories,
+            embedding_model,
+            load=builder_load,
         )
 
     return user_indexes

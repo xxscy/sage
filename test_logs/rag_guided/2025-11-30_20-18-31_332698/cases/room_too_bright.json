@@ -1,0 +1,17 @@
+{
+  "test_name": "room_too_bright",
+  "types": [
+    "device_resolution",
+    "intent_resolution"
+  ],
+  "requires_human_interaction_ground_truth": false,
+  "rag_prediction": false,
+  "rag_reasoning": "```\nReasoning:\nStep 1 - Surface-level analysis: The user states, \"It is too bright in the dining room,\" indicating a problem with the lighting. The key elements are \"too bright\" (indicating excess brightness) and \"dining room\" (specifying the location).\n\nStep 2 - Deep intent inference: The user is likely expressing a desire to reduce the brightness of the lights in the dining room. This implies they want to adjust the lighting to a more comfortable level, as the current state is perceived as excessive.\n\nStep 3 - Information gap analysis: The user did not specify which light strip to adjust, as there are multiple light strips available. However, since the command clearly indicates a need to reduce brightness, I can infer that the user wants to lower the brightness of the lights currently in use in the dining room.\n\nStep 4 - Ambiguity resolution: While there is ambiguity regarding which specific light strip to control, all available light strips are operational and can be adjusted. The command's intent to reduce brightness is clear, and I can proceed with adjusting the brightness of the light strips without needing further clarification.\n\nStep 5 - Decision: Do not need to use human_interaction_tool.\n\nConclusion:\nDo not need to use human_interaction_tool\n\nReason:\nThe user's intent to reduce brightness is clear, and while there is ambiguity about which light strip to adjust, I can reasonably infer that all operational light strips in the dining room can be adjusted to meet the user's needs.\n```",
+  "human_interaction_enabled": false,
+  "execution_result": "success",
+  "error": null,
+  "human_interaction_tool_calls": {
+    "success": 0,
+    "failure": 0
+  }
+}

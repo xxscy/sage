@@ -1,0 +1,17 @@
+{
+  "test_name": "setup_lights_for_dinner",
+  "types": [
+    "device_resolution",
+    "intent_resolution"
+  ],
+  "requires_human_interaction_ground_truth": false,
+  "rag_prediction": false,
+  "rag_reasoning": "```\nReasoning:\nStep 1 - Surface-level analysis: The command \"set up lights for dinner\" indicates an action to prepare the lighting for a dining experience. Key elements include \"set up\" (verb), \"lights\" (noun), and \"dinner\" (contextual noun indicating a specific time or event).\n\nStep 2 - Deep intent inference: The user likely wants to create a suitable ambiance for dinner, which typically involves turning on the lights, adjusting their brightness, and possibly modifying the color temperature to a warmer setting. The context suggests a transition to a dining activity, implying a need for a cozy atmosphere.\n\nStep 3 - Information gap analysis: The command does not specify the desired brightness level or color temperature. However, given that the user is preparing for dinner, a warm color temperature and moderate brightness can be reasonably inferred as defaults for such an occasion.\n\nStep 4 - Ambiguity resolution: There is no significant ambiguity blocking the action. The available devices can be adjusted to create the desired ambiance, and the current states of the lights provide enough information to proceed with adjustments.\n\nStep 5 - Decision: Do not need to use human_interaction_tool.\n\nConclusion:\nDo not need to use human_interaction_tool\n\nReason:\nThe command is clear in its intent to set up lights for dinner, and reasonable defaults can be applied for brightness and color temperature without needing further clarification from the user.\n```",
+  "human_interaction_enabled": false,
+  "execution_result": "failure",
+  "error": "22e11820-64fa-4bed-ad8f-f98ef66de298 state changed without asking.",
+  "human_interaction_tool_calls": {
+    "success": 0,
+    "failure": 0
+  }
+}

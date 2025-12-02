@@ -1,4 +1,4 @@
-"""
+﻿"""
 RAG 系统的 COT 链，用于判断是否需要使用 human_interaction_tool 工具。
 
 该模块从 testcases.py 中读取测试用例，先根据用户指令构造检索请求，

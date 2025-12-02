@@ -1,0 +1,17 @@
+{
+  "test_name": "tv_off_lights_on_persist",
+  "types": [
+    "device_resolution",
+    "persistence"
+  ],
+  "requires_human_interaction_ground_truth": false,
+  "rag_prediction": true,
+  "rag_reasoning": "```\nReasoning:\nStep 1 - Surface-level analysis: The command specifies a condition (\"when the TV by the credenza turns off\") and an action (\"turn on the light by the bed\"). Key elements include the TV's location and the action to control the light.\n\nStep 2 - Deep intent inference: The user wants to automate the lighting based on the TV's state. The command implies that when the TV (which is currently on) turns off, the user desires the light by the bed to be turned on, likely to create a more comfortable or illuminated environment after watching TV.\n\nStep 3 - Information gap analysis: The command does not specify which light strip is \"by the bed,\" as there are multiple light strips present. However, the context suggests that the user expects the assistant to identify the correct light strip based on its location.\n\nStep 4 - Ambiguity resolution: The ambiguity regarding which light strip to turn on is significant, as there are multiple light strips. Without clarification, it is unclear which one the user intends to activate.\n\nStep 5 - Decision: Need to use human_interaction_tool\n\nConclusion:\nNeed to use human_interaction_tool\n\nReason:\nThere is ambiguity regarding which specific light strip is by the bed, which cannot be resolved through existing context or inference, necessitating user clarification.\n```",
+  "human_interaction_enabled": true,
+  "execution_result": "failure",
+  "error": "'NoneType' object is not subscriptable",
+  "human_interaction_tool_calls": {
+    "success": 0,
+    "failure": 0
+  }
+}

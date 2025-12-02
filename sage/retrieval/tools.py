@@ -36,7 +36,7 @@ Input should be a json string with 2 keys: query and user_name.
         default_factory=lambda: {"jq_schema": ".instruction"}
     )
     top_k: int = 5
-
+    force_rebuild_index: bool = False
     llm_config: LLMConfig = None
 
 
@@ -57,12 +57,18 @@ class UserProfileTool(SAGEBaseTool):
             self.memory = MemoryBank()
             self.memory.read_from_json(config.memory_path)
             self.memory.create_indexes(
-                config.vectordb, config.embedding_model, load=True
+                config.vectordb,
+                config.embedding_model,
+                load=not config.force_rebuild_index,
+                force_new_index_dir=config.force_rebuild_index,
             )
         else:
             self.memory = memory
             self.memory.create_indexes(
-                config.vectordb, config.embedding_model, load=False
+                config.vectordb,
+                config.embedding_model,
+                load=False,
+                force_new_index_dir=config.force_rebuild_index,
             )
 
         if isinstance(config.llm_config, TGIConfig):

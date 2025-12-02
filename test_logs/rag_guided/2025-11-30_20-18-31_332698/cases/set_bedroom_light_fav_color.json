@@ -1,0 +1,18 @@
+{
+  "test_name": "set_bedroom_light_fav_color",
+  "types": [
+    "device_resolution",
+    "human_interaction",
+    "intent_resolution"
+  ],
+  "requires_human_interaction_ground_truth": true,
+  "rag_prediction": true,
+  "rag_reasoning": "```\nReasoning:\nStep 1 - Surface-level analysis: The command includes the verb \"set,\" the noun \"bedroom light,\" and the phrase \"my favourite color,\" indicating an action to change the light's color in the bedroom.\n\nStep 2 - Deep intent inference: The user likely wants to create a specific ambiance in the bedroom by changing the light to a color they prefer. However, the command does not specify which light strip to control or what the user's favorite color is, which are critical for executing the command.\n\nStep 3 - Information gap analysis: The missing information includes the user's favorite color and which specific light strip in the bedroom they want to adjust. This gap cannot be filled by common sense or defaults since there is no prior information about the user's color preference.\n\nStep 4 - Ambiguity resolution: The ambiguity regarding which light strip to control and the user's favorite color is significant and cannot be resolved through inference or context. There are multiple light strips, and without knowing the user's favorite color, the command cannot be executed accurately.\n\nStep 5 - Decision: Need to use human_interaction_tool\n\nConclusion:\nNeed to use human_interaction_tool\n\nReason:\nThe command contains unresolved ambiguities regarding the specific light strip and the user's favorite color, which prevents accurate execution of the command.\n```",
+  "human_interaction_enabled": true,
+  "execution_result": "failure",
+  "error": "EOF when reading a line",
+  "human_interaction_tool_calls": {
+    "success": 1,
+    "failure": 0
+  }
+}

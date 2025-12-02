@@ -1,0 +1,17 @@
+{
+  "test_name": "getting_call_tv_too_loud",
+  "types": [
+    "device_resolution",
+    "intent_resolution"
+  ],
+  "requires_human_interaction_ground_truth": false,
+  "rag_prediction": false,
+  "rag_reasoning": "```\nReasoning:\nStep 1 - Surface-level analysis: The user, Amal, is indicating that they are receiving a call and requests to adjust the volume of the TV. The key action is \"adjust the volume,\" and the context suggests a need to lower the volume due to the incoming call.\n\nStep 2 - Deep intent inference: The user is likely trying to lower the volume of the TV to avoid distraction or interference from the call. Given that the Samsung The Frame (49) TV is currently on with a volume level of 6, it is reasonable to infer that the user wants to decrease this volume to a more manageable level.\n\nStep 3 - Information gap analysis: There is no specific target volume mentioned, but the current volume level of 6 provides a basis for adjustment. A common sense approach would be to lower the volume to a moderate level, such as 3 or 4, which is typical when reducing volume for phone calls.\n\nStep 4 - Ambiguity resolution: The command does not specify which TV to adjust, but since the Samsung The Frame (49) is on and actively playing media, it is logical to assume that this is the TV the user is referring to. The Samsung 8 Series (82) is off and not relevant in this context.\n\nStep 5 - Decision: Do not need to use human_interaction_tool.\n\nConclusion:\nDo not need to use human_interaction_tool\n\nReason:\nThe command is clear in its intent to lower the volume of the active TV, and the necessary information to execute this action is available through inference and common sense reasoning.\n```",
+  "human_interaction_enabled": false,
+  "execution_result": "success",
+  "error": null,
+  "human_interaction_tool_calls": {
+    "success": 0,
+    "failure": 0
+  }
+}
