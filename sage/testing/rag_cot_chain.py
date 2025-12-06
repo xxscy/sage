@@ -1,4 +1,4 @@
-"""
+﻿"""
 RAG 系统的 COT 链，用于判断是否需要使用 human_interaction_tool 工具。
 
 该模块从 testcases.py 中读取测试用例，先根据用户指令构造检索请求，
@@ -34,6 +34,11 @@ from sage.utils.common import CONSOLE
 from sage.retrieval.tools import UserProfileToolConfig
 from sage.testing.testing_utils import get_base_device_state
 from sage.smartthings.docmanager import DocManager
+# VLM 设备消歧工具（可选）
+try:
+    from sage.smartthings.device_disambiguation import VlmDeviceDetector
+except Exception:  # pragma: no cover - 环境缺依赖时降级
+    VlmDeviceDetector = None
 
 
 @dataclass
@@ -44,7 +49,9 @@ class RAGCOTConfig:
         temperature=0.0,
         streaming=False,
     )
-    test_types_to_include: List[str] = None  # None表示包含所有类型
+    test_types_to_include: Optional[List[str]] = None  # None表示包含所有类型
+    only_human_interaction: bool = False
+    enable_type_filter: bool = False
     # 如果不指定，将尝试从用户指令前缀中自动解析（如 "Abhisek : xxx"）
     user_name: str = "default_user"
     # 每条指令用于检索用户偏好的查询模板（发送给 LLM，使用英文）
@@ -55,6 +62,12 @@ class RAGCOTConfig:
     max_test_cases: Optional[int] = None  # 限制本次评估的测试用例数量
     device_lookup_max_results: int = 3
     default_weather_location: str = "quebec city, Canada"
+    planner_max_repeat_queries: int = 3
+    planner_max_failures_per_action: int = 2
+    enable_environment_overview: bool = True
+    enable_intent_analysis: bool = True
+    focus_test_names: Optional[List[str]] = None
+    repeat_runs_per_test: int = 1
 
 
 class ContextUnderstandingTool:
@@ -162,6 +175,33 @@ class DeviceLookupTool:
 
         matches.sort(key=lambda item: item[0], reverse=True)
         limited = matches[: self.max_results]
+
+        # 如果有图片且候选>1，尝试用 VLM 消歧将最相关的设备提前
+        if VlmDeviceDetector is not None:
+            image_folder = (
+                Path(os.getenv("SMARTHOME_ROOT", "."))
+                .joinpath("sage/testing/assets/images")
+            )
+            if image_folder.exists() and len(limited) > 1:
+                device_ids = [device_id for _, device_id, _ in limited]
+                try:
+                    winner, _ = _vlm_pick_device(
+                        command=query, device_ids=device_ids, image_folder=image_folder
+                    )
+                    if winner in device_ids:
+                        # 重新排序：VLM 命中者优先
+                        limited.sort(key=lambda x: 0 if x[1] == winner else 1)
+                        # 给命中者一个小的分数加成，便于输出提示
+                        limited = [
+                            (
+                                score + (5 if dev_id == winner else 0),
+                                dev_id,
+                                metadata,
+                            )
+                            for score, dev_id, metadata in limited
+                        ]
+                except Exception as exc:
+                    CONSOLE.log(f"[yellow]VLM 消歧在 device_lookup 中失败，已忽略: {exc}")
         lines = []
         for score, device_id, metadata in limited:
             lines.append(
@@ -558,8 +598,6 @@ def _shorten_text(text: str, limit: int = 120) -> str:
     return stripped[: limit - 3] + "..."
 
 
-MAX_REPEAT_QUERIES = 3
-MAX_FAILURES_PER_ACTION = 2
 def _normalize_query_text(text: Optional[str]) -> str:
     if not text:
         return ""
@@ -583,13 +621,15 @@ def _should_skip_query(
     query_attempts: Dict[Tuple[str, str], int],
     failure_notes: List[str],
     action_failure_counts: Dict[str, int],
+    *,
+    max_repeat_queries: int,
 ) -> bool:
     normalized = _normalize_query_text(query)
     if not normalized:
         return False
     key = (action, normalized)
     current = query_attempts.get(key, 0)
-    if current >= MAX_REPEAT_QUERIES:
+    if current >= max_repeat_queries:
         _record_failure_note(
             action,
             f"{action} '{_shorten_text(query, 80)}' skipped: repeated {current} times without new info",
@@ -839,6 +879,7 @@ def _collect_target_device_context(
     categories: List[str],
     device_state: Optional[Dict[str, Any]],
     doc_manager: Optional[DocManager],
+    vlm_device_id: Optional[str] = None,
 ) -> str:
     if not device_state:
         return "(device state unavailable)"
@@ -864,6 +905,19 @@ def _collect_target_device_context(
         lines.append(f"[{rule['label']}] 重点属性: {focus_text or '状态未知'}")
         matched = False
         for device_id, components in device_state.items():
+            # 若 VLM 已命中且该设备不匹配，则跳过同类设备
+            if vlm_device_id and device_id != vlm_device_id:
+                device_name_for_cat = doc_manager.device_names.get(device_id, device_id) if getattr(doc_manager, "device_names", None) else device_id
+                doc_caps_for_cat = doc_manager.device_capabilities.get(device_id) if getattr(
+                    doc_manager, "device_capabilities", None
+                ) else None
+                dev_cats_for_cat = _infer_device_categories_from_metadata(
+                    device_name_for_cat,
+                    doc_caps_for_cat,
+                    components,
+                )
+                if category_key in dev_cats_for_cat:
+                    continue
             device_name = (
                 doc_manager.device_names.get(device_id, device_id)
                 if getattr(doc_manager, "device_names", None)
@@ -893,6 +947,7 @@ def _build_target_device_context(
     command: str,
     device_state: Optional[Dict[str, Any]],
     doc_manager: Optional[DocManager],
+    vlm_device_id: Optional[str] = None,
 ) -> Tuple[List[str], str]:
     categories = _detect_target_device_categories(command)
     context = _collect_target_device_context(
@@ -900,8 +955,115 @@ def _build_target_device_context(
         categories=categories,
         device_state=device_state,
         doc_manager=doc_manager,
+        vlm_device_id=vlm_device_id,
     )
+    if vlm_device_id and doc_manager and getattr(doc_manager, "device_names", None):
+        device_name = doc_manager.device_names.get(vlm_device_id, vlm_device_id)
+        context = f"[VLM] 视觉消歧命中: {device_name} ({vlm_device_id})\n" + context
+    elif vlm_device_id:
+        context = f"[VLM] 视觉消歧命中: {vlm_device_id}\n" + context
     return categories, context
+
+
+def _vlm_pick_device(
+    *,
+    command: str,
+    device_ids: List[str],
+    image_folder: Optional[Path],
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    使用 VLM (CLIP) 对候选设备进行一次视觉消歧，返回 (winner_device_id, note)。
+
+    - 仅在 VlmDeviceDetector 可用且 image_folder 存在时启用。
+    - 若仅 0/1 个设备或图片缺失，返回 (None, None)。
+    """
+    if VlmDeviceDetector is None:
+        return None, "[VLM error: detector unavailable]"
+    if not image_folder or not image_folder.exists():
+        return None, "[VLM error: image folder missing]"
+    # 仅保留有对应图片的候选
+    candidate_ids = [
+        dev_id for dev_id in device_ids if image_folder.joinpath(f"{dev_id}.jpg").exists()
+    ]
+    if len(candidate_ids) <= 1:
+        return None, "[VLM none: no image candidates]"
+    try:
+        detector = VlmDeviceDetector(str(image_folder))
+        payload = {
+            "devices": candidate_ids,
+            "disambiguation_information": command,
+        }
+        winner = None
+        ranked: List[Tuple[str, float]] = []
+        if hasattr(detector, "identify_device_with_scores"):
+            winner, ranked = detector.identify_device_with_scores(json.dumps(payload))
+        else:
+            winner = detector.identify_device(json.dumps(payload))
+        if ranked:
+            score_log = ", ".join(f"{dev}:{score:.3f}" for dev, score in ranked[:5])
+            top_score = ranked[0][1]
+            second_score = ranked[1][1] if len(ranked) > 1 else None
+            score_gap = top_score - (second_score if second_score is not None else 0.0)
+            CONSOLE.log(f"[cyan]VLM scores[/cyan]: {score_log}")
+            # 阈值：分差<0.05 或 顶分<0.25 视为视觉歧义，保留前3供下游处理
+            if (second_score is not None and score_gap < 0.05) or top_score < 0.25:
+                top_candidates = [dev_id for dev_id, _ in ranked[:3]]
+                return None, f"VLM ambiguous: top gap {score_gap:.3f}, top score {top_score:.3f}, candidates={top_candidates}, scores={score_log}"
+        if winner and winner in candidate_ids:
+            return winner, f"VLM disambiguation suggests device {winner} for '{command}'. scores={', '.join(f'{d}:{s:.3f}' for d, s in ranked[:5])}" if ranked else f"VLM disambiguation suggests device {winner} for '{command}'."
+    except Exception as exc:
+        err = f"[VLM error: {exc}]"
+        CONSOLE.log(f"[yellow]VLM 消歧失败，忽略: {exc}")
+        return None, err
+    # ranked 为空或未返回 winner
+    return None, "[VLM none: no match]" if not ranked else f"[VLM none: no match, scores={', '.join(f'{d}:{s:.3f}' for d, s in ranked[:5])}]"
+
+
+def _vlm_disambiguate_devices(
+    *,
+    command: str,
+    device_ids: List[str],
+    image_folder: Optional[Path],
+) -> Optional[str]:
+    # 兼容旧调用：只返回 note
+    _, note = _vlm_pick_device(command=command, device_ids=device_ids, image_folder=image_folder)
+    return note
+
+
+def _collect_image_hints(
+    *,
+    command: str,
+    device_ids: List[str],
+    doc_manager: Optional[DocManager],
+    image_folder: Optional[Path],
+    max_images: int = 3,
+) -> List[str]:
+    """
+    根据文件名(即 device_id) 收集可用的设备图片，并用设备名/命令相似度做简单排序。
+    仅提供“提示”文本（device_id -> image path），不做真正的视觉识别。
+    """
+    if not image_folder or not image_folder.exists():
+        return []
+    # 仅保留既有 device_id 又有图片的
+    available_ids = set(device_ids)
+    hints: List[tuple[float, str, str]] = []
+    for file in image_folder.iterdir():
+        if not file.is_file():
+            continue
+        stem = file.stem
+        if stem not in available_ids:
+            continue
+        name = (
+            doc_manager.device_names.get(stem, stem)
+            if doc_manager and getattr(doc_manager, "device_names", None)
+            else stem
+        )
+        # 简单相似度：命令与设备名
+        score = SequenceMatcher(None, command.lower(), name.lower()).ratio()
+        hints.append((score, stem, str(file)))
+    hints.sort(key=lambda x: x[0], reverse=True)
+    top = hints[:max_images]
+    return [f"{dev_id} ({score:.2f}) -> {path}" for score, dev_id, path in top]
 
 
 def _ensure_tool_global_config(docmanager_cache_path: Path) -> None:
@@ -1293,62 +1455,72 @@ def build_intent_analysis_prompt(
     """
     构建用户深层意图分析的 prompt，供 LLM 生成结构化意图描述。
     """
-    preferences_text = (
-        "(no user preference information available)"
-        if not user_preferences
-        else str(user_preferences)
-    )
-    memory_text = (
-        "(no historical interactions related to the current command)"
-        if not user_memory_snippets
-        else "\n".join(user_memory_snippets)
-    )
-    context_summary_text = (
-        context_summary if context_summary else "(context summary unavailable)"
-    )
-    device_lookup_text = (
-        "(device lookup tool not used)"
-        if not device_lookup_notes
-        else "\n".join(device_lookup_notes)
-    )
-    environment_text = (
-        environment_overview if environment_overview else "(environment overview unavailable)"
-    )
-    tv_guide_text = (
-        tv_guide_knowledge if tv_guide_knowledge else "(tv guide knowledge unavailable)"
-    )
-    weather_text = (
-        "\n".join(weather_reports)
-        if weather_reports
-        else "(weather lookup not used)"
-    )
-    device_state_focus_text = (
-        device_state_focus if device_state_focus else "(device state focus unavailable)"
-    )
-    target_device_context_text = (
-        target_device_context if target_device_context else "(targeted device context unavailable)"
-    )
+    preferences_text = str(user_preferences) if user_preferences else "(no user preference information available)"
+    memory_text = "\n".join(user_memory_snippets) if user_memory_snippets else "(no historical interactions)"
+    context_summary_text = context_summary or "(context summary unavailable)"
+    environment_text = environment_overview or "(environment overview unavailable)"
+    device_state_focus_text = device_state_focus or "(device state focus unavailable)"
+    target_device_context_text = target_device_context or "(targeted device context unavailable)"
+    tv_guide_text = tv_guide_knowledge or "(tv guide knowledge unavailable)"
 
-    return f"""You are the intent analysis module.
-Base your reasoning ONLY on the facts below and describe the user's objective with zero ambiguity.
-If any reference (it/this/they/the game/etc.) or subjective wording could map to multiple targets, explicitly call it out and assess the risk of acting without clarification.
+    return f"""You are the "Deep Intent Resolver".
 
-Facts:
+Your task is to translate the user's raw input into a precise "Refined Command" using strict logical deduction.
+
+**Reasoning Framework (Zero-Shot Logic):**
+
+1. **Categorize the Request**:
+   - **Device Control**: Physical state changes (e.g., Turn on/off, Dim, Open door, Set temperature).
+     - *Inference Rule*: You MAY infer parameters from the environmental situation (e.g., "Too bright" -> Turn Off). Standard defaults are acceptable.
+   - **Content Consumption**: Consuming specific media (e.g., Watch specific show, Play genre, Listen to news).
+     - *Inference Rule*: You MUST find a specific, verifiable source mapping. Defaults are NOT acceptable for specific content.
+
+2. **Content Verification Protocol (CRITICAL for Content Requests)**:
+   - If the user asks for specific content but does not name the channel/app:
+     - You MUST search the `TV Guide` or `History` for a semantic match.
+     - **PROHIBITION**: You CANNOT assume a device's current input/channel is correct just because the device is On.
+     - **Resolution**:
+       - If valid match found -> Refined Command includes the specific channel/input.
+       - If NO verified match found -> Refined Command MUST state "UNKNOWN_CHANNEL" or "AMBIGUOUS_SOURCE". Do NOT guess.
+
+3. **Event-State Causality (for Device Control)**:
+   - Analyze the user's activity or physiological state (the "Cause").
+   - Logically deduce the environmental change required to facilitate that cause (the "Effect").
+   - *Logic*: Activity requiring focus/rest -> Reduce interference. Activity requiring visibility -> Increase illumination.
+
+4. **Entity Grounding**:
+   - Identify the target device based on location descriptions.
+   - If multiple devices exist, check if only one is capable/active to resolve ambiguity.
+
+**Execution Bias Guidelines (apply unless explicit conflicts exist):**
+- Situational cues → action direction: complaints imply the opposite state; “going to sleep” → dim warm light; “incoming call” → lower/mute TV audio; “too bright” → turn off/dim lights.
+- Default action inference: when direction is clear but value is missing, apply safe defaults (brightness 30–40%, volume down ~20 or mute, use last/quick mode for dishwasher, turn on = normal on-state). Only mark UNKNOWN when the user requested a specific-but-unknown preference (“favorite”, “like last time”, “that song”).
+- Contextual disambiguation: if VLM/device lookup or naming/location yields a high-confidence single device, select it and proceed; similar devices in other locations are not blocking ambiguity. Maintain continuity with the most recently referenced/active device.
+- Preference/entity inference: when preferences or history include named entities or modes but omit a required property, infer the typical attribute of that entity (e.g., a primary characteristic) and mark it as inferred; only leave it unknown if no reasonable inference exists.
+
+**Task:**
+Generate a `Refined Command`.
+- For **Device Control**: Apply safe defaults if parameters are missing.
+- For **Content Consumption**: Only generate a specific command if the source is **verified**. Otherwise, flag the missing parameter.
+
+**Facts:**
 - Command: "{test_case.user_command}"
+- TV Guide / Knowledge: {tv_guide_text}
+- User History: {memory_text}
+- Device State Focus: {device_state_focus_text}
+- Target Device Context: {target_device_context_text}
+- Context Summary: {context_summary_text}
+- Device Environment: {environment_text}
 - Preferences / device facts: {preferences_text}
-- History: {memory_text}
-- Device lookup: {device_lookup_text}
-- Context summary: {context_summary_text}
-- Environment overview: {environment_text}
-- Device state focus (real-time power / volume / brightness cues): {device_state_focus_text}
-- Target devices mentioned in the command (with highlighted states): {target_device_context_text}
-- Weather lookup findings: {weather_text}
-- TV guide knowledge: {tv_guide_text}
 
-Respond with exactly three lines:
-Intent: <full, concrete description of everything the user expects, spelled out clearly with no pronouns or vague phrases>
-Constraints & cues: <detail implicit goals, context triggers, personalization hints; include exact devices/locations if known>
-Risk assessment: <if any reference or detail is uncertain, spell out the ambiguity and potential failure; write "None" only when no risk remains>"""
+**Output Structure:**
+- **Request Type**: [Device Control / Content Consumption]
+- **Identified Situation**: [Abstract description of user context]
+- **Content Verification**: [Found verifiable match in Guide/History OR "No verifiable match found"]
+- **Refined Command**: [Explicit command. Use 'UNKNOWN_PARAMETER' if verification fails.]
+- **Confidence**: [High (Verified/Obvious) / Low (Unverified Content/Ambiguous Target)]
+- **Reasoning**: [Step-by-step deduction. Explicitly state if TV Guide was used or if a default was applied.]
+"""
 
 
 def build_environment_overview_prompt(
@@ -1357,9 +1529,11 @@ def build_environment_overview_prompt(
     device_lookup_notes: Optional[List[str]] = None,
     device_state: Optional[Dict[str, Any]] = None,
     target_device_context: Optional[str] = None,
+    vlm_disambiguation_notes: Optional[str] = None,
+    image_hints: Optional[List[str]] = None,
 ) -> str:
     """
-    生成设备/环境自然语言概览，帮助 LLM 理解当前可操作的设备与状态。
+    Build a neutral environment summary (no reasoning, no inference).
     """
     lookup_text = (
         "\n".join(device_lookup_notes)
@@ -1372,24 +1546,35 @@ def build_environment_overview_prompt(
         if target_device_context
         else "(no targeted device context generated)"
     )
-    return f"""You are building an environment briefing for a smart home assistant.
-Summarize, in plain Chinese, what devices and capabilities are currently known from retrieval,
-their approximate locations (if names give hints like "by the credenza" or "Frame TV"),
-and any salient state (power, input source, volume, brightness, modes). Use only the facts provided.
+    vlm_notes_text = (
+        vlm_disambiguation_notes
+        if vlm_disambiguation_notes
+        else "(vlm disambiguation not used)"
+    )
+    image_hints_text = (
+        "\n".join(image_hints) if image_hints else "(no image hints gathered)"
+    )
 
-Details to ground your summary:
+    return f"""You are compiling an environment briefing for a smart home assistant.
+Summarize only the known facts; do NOT infer or speculate. Keep it concise, in English.
+
+Facts to include:
 - User command: "{test_case.user_command}"
-- Device lookup notes (include DocManager capability metadata when useful):
+- Device lookup notes:
 {lookup_text}
 - Device state snapshot (from fake_requests): {device_state_text}
-- Target devices extracted from the user command (emphasize these states first):
+- Target devices extracted from the command:
 {target_context_text}
+- VLM disambiguation hint:
+{vlm_notes_text}
+- Image hints (device_id -> image path):
+{image_hints_text}
 
-Output 2 concise paragraphs:
-1) Detected devices & locations: enumerate each identified device, what it is, where it is, and relevant APIs/capabilities inferred from the metadata.
-2) Current state & control cues: describe on/off status, levels, input sources, or other state values that may matter for fulfilling the command.
+Output exactly 2 short paragraphs:
+1) Devices & locations (as stated or hinted by names/metadata); list device names/IDs and capabilities if present.
+2) Current states or control cues (power, levels, input sources, modes) exactly as provided.
 
-Avoid speculation. Use declarative sentences in Chinese so downstream modules can reference this briefing directly."""
+Do not add interpretations, guesses, or recommendations."""
 
 
 def build_cot_prompt(
@@ -1405,6 +1590,7 @@ def build_cot_prompt(
     weather_reports: Optional[List[str]] = None,
     device_state_focus: Optional[str] = None,
     target_device_context: Optional[str] = None,
+    intent_reasoning_enabled: bool = True,
 ) -> str:
     """
     构建 COT（Chain of Thought）推理提示词。
@@ -1419,171 +1605,68 @@ def build_cot_prompt(
         user_preferences: 针对当前 user_name 检索到的用户偏好摘要
         user_memory_snippets: 针对当前 user_name 和命令检索到的历史交互片段
         examples: 示例测试用例（已弃用，使用零样本模式）
+        intent_reasoning_enabled: 是否启用深度推理（受意图分析开关控制）
 
     Returns:
         构建好的 prompt 字符串（英文，用于发送给 LLM）
     """
-    preferences_text = (
-        "(no user preference information available)"
-        if not user_preferences
-        else str(user_preferences)
-    )
-    memory_text = (
-        "(no historical interactions related to the current command)"
-        if not user_memory_snippets
-        else "\n".join(user_memory_snippets)
-    )
-    device_lookup_text = (
-        "(device lookup tool not used)"
-        if not device_lookup_notes
-        else "\n".join(device_lookup_notes)
-    )
-    context_summary_text = (
-        context_summary if context_summary else "(context summary unavailable)"
-    )
-    intent_analysis_text = (
-        intent_analysis
-        if intent_analysis
-        else "(intent analysis unavailable)"
-    )
-    environment_text = (
-        environment_overview
-        if environment_overview
-        else "(environment overview unavailable)"
-    )
-    tv_guide_text = (
-        tv_guide_knowledge
-        if tv_guide_knowledge
-        else "(tv guide knowledge unavailable)"
-    )
-    weather_text = (
-        "\n".join(weather_reports)
-        if weather_reports
-        else "(weather lookup not used)"
-    )
-    device_state_focus_text = (
-        device_state_focus if device_state_focus else "(device state focus unavailable)"
-    )
-    target_device_context_text = (
-        target_device_context
-        if target_device_context
-        else "(targeted device context unavailable)"
-    )
+    preferences_text = str(user_preferences) if user_preferences else "(no user preferences)"
+    memory_text = "\n".join(user_memory_snippets) if user_memory_snippets else "(no history)"
+    intent_analysis_text = intent_analysis if intent_analysis else "(unavailable)"
+    environment_text = environment_overview if environment_overview else "(unavailable)"
+    device_state_focus_text = device_state_focus if device_state_focus else "(unavailable)"
 
-    base_prompt = f"""You are the decision module of a smart home assistant.
-Only the information retrieved by earlier planner/tool calls is available to you now.
-Do not assume that the full list of devices was preloaded; rely solely on the targeted
-facts that have already been fetched.
+    base_prompt = f"""You are the autonomous decision module of a smart home assistant.
+Your GOAL: Decide if you need to ask the user for clarification (`Need`) or proceed (`Do not need`).
 
-Your task:
-1. Using the already retrieved user preferences, history snippets, and device state, understand the current user command.
-2. Apply deep reasoning to infer the user's underlying intent and situational context.
-3. Decide whether you need to call the `human_interaction_tool` to ask the user clarifying questions.
+**Decision Protocol (Zero-Shot Logic):**
+You must output `Do not need to use human_interaction_tool` ONLY if the `Refined Command` is **Complete**, **Verified**, and **Safe**.
 
-Core Reasoning Principles:
-Before deciding to ask for clarification, you MUST perform deep reasoning using these principles:
+**Logic 1: The Content Verification Gate**:
+- **Condition**: The request is classified as **Content Consumption** (watching/listening).
+- **Check**: Review the `Deep Intent Hypothesis`. Did it successfully find a specific, verified source (channel/app) in the Knowledge Base?
+- **Decision**:
+  - If `Refined Command` contains a specific, verified source -> **Do not need** (Proceed).
+  - If `Refined Command` contains "UNKNOWN" or relies on unverified assumptions (like keeping current input) -> **Need** (Ask clarification).
+  - *Rationale*: Guessing the wrong content is a failure.
 
-1. **Situational Context Analysis**: Analyze the broader context implied by the command.
-   - Identify situational cues: communication events, activity transitions, environmental states, or task contexts.
-   - Infer corrective or facilitative intent: When users mention problems or transitions, infer actions that address the issue or facilitate the transition.
-   - Apply reverse logic: Complaints about conditions imply the user wants the opposite state.
+**Logic 2: The Safe Default Exemption**:
+- **Condition**: The request is classified as **Device Control** (on/off/dim/temp) and a parameter is missing.
+- **Check**: Can a standard, harmless default apply? (e.g., "Turn on" -> 100% brightness; "Start" -> Normal Cycle).
+- **Decision**:
+  - If YES -> **Do not need** (Proceed with default).
+  - If NO (e.g., User asked for a specific "Favorite" that is unknown) -> **Need**.
 
-2. **Common Sense Reasoning**: Apply everyday logic and social conventions.
-   - Use domain knowledge about typical user behaviors and preferences in similar situations.
-   - Infer task-appropriate settings based on the nature of the requested activity.
-   - Apply social conventions and cultural norms relevant to the context.
+**Execution Bias (apply when not conflicting with above):**
+- Situational cues → action direction (complaints → opposite state; sleep → dim warm light; call → lower/mute TV).
+- If a single high-confidence device is identified (by name/location/VLM or is the only active relevant device), proceed with it; similar devices elsewhere are not blocking ambiguity.
+- When direction is clear but value is missing, apply safe defaults (brightness 30–40%, volume down ~20 or mute, use last/quick mode for dishwasher). Only escalate when the user explicitly asked for a specific-but-unknown preference.
 
-3. **Default Action Inference**: When a specific value is missing but the intent is clear, infer a reasonable default action.
-   - For directional adjustments: Apply moderate changes when direction is clear but magnitude is unspecified.
-   - For task-appropriate modes: Select modes that match the task characteristics.
-   - For subjective terms: Use industry-standard defaults or mid-range values.
-
-4. **Contextual Disambiguation**: Use available context to resolve ambiguity.
-   - Resolve pronouns and implicit references by matching to recently mentioned items, active devices, or contextually prominent elements.
-   - Assume temporal continuity: References maintain continuity with recent interactions unless explicitly contradicted.
-   - Leverage device lookup results when available.
-
-Risk-Aware Decision Rule:
-Use `human_interaction_tool` ONLY when there exists a genuine, unresolvable ambiguity that prevents action.
-This means the ambiguity cannot be resolved through:
-- Deep reasoning about situational context
-- Common sense inference
-- Contextual disambiguation using available information
-- Application of reasonable defaults
-
-Before finalizing a "Do not need" decision, confirm that:
-- Every critical requirement (target entity, action parameters, personalization constraints) is either explicitly provided or backed by high-confidence inference.
-- No equally plausible alternative interpretation remains unresolved.
-- Executing without clarification will not risk incorrect or unsafe behavior.
-
-When in doubt between autonomous action and clarification, prefer calling `human_interaction_tool`.
-
-Your STRONG bias should be to solve the command autonomously using deep reasoning and common sense.
-Only ask for clarification when there is a genuine, unresolvable ambiguity that prevents action.
-
-Below is the information already retrieved for you (do NOT call additional tools; reason only with what is provided):
-
-- Retrieved user preference / device facts (results of previous `preference_lookup` calls, may be empty):
-{preferences_text}
-
-- Retrieved historical interaction snippets (most relevant to the current command, may be empty):
-{memory_text}
-
-- Device lookup findings (from fake_requests snapshot + DocManager metadata):
-{device_lookup_text}
-
-- Context understanding summary (generated from targeted retrievals):
-{context_summary_text}
-
-- Deep intent hypothesis (generated by the dedicated intent analysis module):
+**Input Data:**
+- User Command: "{test_case.user_command}"
+- Deep Intent Hypothesis:
 {intent_analysis_text}
-
-- Environment briefing (devices, locations, states summarized from DocManager metadata):
-{environment_text}
-- Device state focus (real-time on/off/levels to resolve ambiguity):
+- Device Context:
 {device_state_focus_text}
 
-- Command-targeted device context (grouped states for mentioned device types):
-{target_device_context_text}
-
-- TV program guide knowledge base:
-{tv_guide_text}
-
-- Weather lookup findings:
-{weather_text}
-
-Using the above context, analyze the user command with explicit Chain-of-Thought reasoning:
-
-User command: "{test_case.user_command}"
-
-Reasoning steps:
-1. **Surface-level analysis**: Identify key verbs, nouns, adjectives, pronouns, and explicit parameters in the command.
-2. **Deep intent inference**: Analyze the situational context and underlying user intent. What is the user really trying to achieve? What does the situation imply about the desired action?
-3. **Information gap analysis**: Identify what specific information is missing (if any). Can this gap be filled by common sense inference, situational context, reasonable defaults, or retrieved preferences/history?
-4. **Ambiguity resolution**: Determine if any remaining ambiguity is truly blocking or can be resolved through inference. Explicitly check whether multiple plausible interpretations or unverifiable assumptions remain.
-5. **Decision**: Decide whether to call `human_interaction_tool`. Default to "Do not need" only when all critical requirements are supported by evidence or high-confidence inference; otherwise choose clarification.
+**Reasoning Process:**
+1.  **Classify Intent**: Is this Device Control or Content Consumption?
+2.  **Analyze Refinement**: Look at the `Refined Command` and `Content Verification` status.
+3.  **Apply Logic**: Use Logic 1 for Content, Logic 2 for Device Control.
+4.  **Final Verdict**: Determine if clarification is strictly required.
 
 Format your answer exactly as:
-```
-Reasoning:
-Step 1 - Surface-level analysis: [...]
-Step 2 - Deep intent inference: [Analyze the situation and infer what the user really wants. Apply common sense reasoning about the context.]
-Step 3 - Information gap analysis: [Identify missing information and determine if it can be inferred from context, common sense, or defaults.]
-Step 4 - Ambiguity resolution: [Determine if any ambiguity is truly blocking.]
-Step 5 - Decision: [...]
+Reasoning: Step 1 - Classify Intent: [...] Step 2 - Analyze Refinement: [...] Step 3 - Apply Logic: [...] Step 4 - Final Verdict: [...]
 
 Conclusion:
 Need / Do not need to use human_interaction_tool
 
 Reason:
-[Brief explanation in 1–2 sentences]
-```
+[Brief explanation focusing on verification status or safe defaults]
 
-IMPORTANT: The line after `Conclusion:` MUST be exactly either `Need to use human_interaction_tool`
-or `Do not need to use human_interaction_tool`. Any other wording is invalid.
+IMPORTANT: The line after `Conclusion:` MUST be exactly either `Need to use human_interaction_tool` or `Do not need to use human_interaction_tool`.
 """
-    
-    # 使用零样本（zero-shot）prompt，不提供示例，确保评估公平性
+
     return base_prompt
 
 
@@ -1782,6 +1865,10 @@ def evaluate_test_case(
     examples: List[TestCaseInfo] = None,  # 保留参数以保持兼容性，但不再使用（零样本模式）
     log_base_dir: Optional[Path] = None,
     weather_lookup_tool: Optional[WeatherLookupTool] = None,
+    planner_max_repeat_queries: int = 3,
+    planner_max_failures_per_action: int = 2,
+    enable_environment_overview: bool = True,
+    enable_intent_analysis: bool = True,
 ) -> Dict[str, Any]:
     """
     评估单个测试用例，判断 LLM 是否正确识别是否需要 human_interaction_tool。
@@ -1810,16 +1897,11 @@ def evaluate_test_case(
     tv_guide_knowledge: str = build_tv_guide_knowledge(test_case.user_command)
     weather_facts: List[str] = []
     device_state = _prepare_device_state_for_test(test_case)
+    device_state_for_prompt = device_state
     device_lookup_tool.update_device_state(device_state)
     doc_manager = getattr(device_lookup_tool, "doc_manager", None)
-    device_state_focus = _build_device_state_focus(
-        device_state, doc_manager
-    )
-    target_device_categories, target_device_context = _build_target_device_context(
-        command=test_case.user_command,
-        device_state=device_state,
-        doc_manager=doc_manager,
-    )
+    device_state_focus = "(device state focus unavailable)"
+    target_device_categories, target_device_context = ([], "(no device context)")
     failure_notes: List[str] = []
     query_attempts: Dict[Tuple[str, str], int] = {}
     action_failure_counts: Dict[str, int] = {}
@@ -1836,15 +1918,23 @@ def evaluate_test_case(
     device_state_summary = _summarize_device_state(device_state)
     CONSOLE.log(f"[bold]设备状态摘要[/bold]: {device_state_summary}")
 
-    def _generate_environment_overview():
+    def _generate_environment_overview(
+        vlm_hint: Optional[str] = None, image_hints: Optional[List[str]] = None
+    ):
         nonlocal environment_overview
+        if not enable_environment_overview:
+            if environment_overview is None:
+                environment_overview = "(environment overview disabled)"
+            return environment_overview
         if environment_overview:
             return environment_overview
         env_prompt = build_environment_overview_prompt(
             test_case=test_case,
             device_lookup_notes=device_facts if device_facts else None,
-            device_state=device_state,
+            device_state=device_state_for_prompt,
             target_device_context=target_device_context,
+            vlm_disambiguation_notes=vlm_hint,
+            image_hints=image_hints,
         )
         env_message = HumanMessage(content=env_prompt)
         env_response = llm([env_message])
@@ -1857,10 +1947,17 @@ def evaluate_test_case(
         return environment_overview
 
     def _generate_intent_analysis():
-        nonlocal intent_analysis
+        nonlocal intent_analysis, environment_overview
         if intent_analysis:
             return intent_analysis
-        _generate_environment_overview()
+        if not enable_intent_analysis:
+            intent_analysis = "(intent analysis disabled)"
+            if environment_overview is None and not enable_environment_overview:
+                environment_overview = "(environment overview disabled)"
+            return intent_analysis
+        if environment_overview is None and not enable_environment_overview:
+            environment_overview = "(environment overview disabled)"
+        _generate_environment_overview(vlm_hint, image_hints)
         intent_prompt = build_intent_analysis_prompt(
             test_case=test_case,
             user_preferences=user_preferences,
@@ -1882,6 +1979,63 @@ def evaluate_test_case(
         )
         CONSOLE.log(f"[green]用户意图分析[/green]: {intent_analysis}")
         return intent_analysis
+
+    # 可选：基于图片的 VLM 消歧提示
+    image_folder = Path(os.getenv("SMARTHOME_ROOT", ".")).joinpath(
+        "sage/testing/assets/images"
+    )
+    vlm_winner, vlm_hint = _vlm_pick_device(
+        command=test_case.user_command,
+        device_ids=list(device_state.keys()),
+        image_folder=image_folder,
+    )
+    if vlm_hint:
+        device_facts.append(f"[VLM] {vlm_hint}")
+    image_hints: List[str] = _collect_image_hints(
+        command=test_case.user_command,
+        device_ids=list(device_state.keys()),
+        doc_manager=doc_manager,
+        image_folder=image_folder,
+    )
+    target_device_categories, target_device_context = _build_target_device_context(
+        command=test_case.user_command,
+        device_state=device_state,
+        doc_manager=doc_manager,
+        vlm_device_id=vlm_winner,
+    )
+    # 基于 VLM 命中设备过滤同类设备，后续所有提示只暴露已筛选的目标
+    if vlm_winner and target_device_categories:
+        filtered: Dict[str, Any] = {}
+        for dev_id, comp in device_state.items():
+            name = (
+                doc_manager.device_names.get(dev_id, dev_id)
+                if doc_manager and getattr(doc_manager, "device_names", None)
+                else dev_id
+            )
+            doc_caps = (
+                doc_manager.device_capabilities.get(dev_id)
+                if doc_manager and getattr(doc_manager, "device_capabilities", None)
+                else None
+            )
+            cats = _infer_device_categories_from_metadata(
+                name,
+                doc_caps,
+                comp,
+            )
+            if cats.intersection(target_device_categories) and dev_id != vlm_winner:
+                continue
+            filtered[dev_id] = comp
+        if filtered:
+            device_state_for_prompt = filtered
+    device_state_focus = _build_device_state_focus(
+        device_state_for_prompt, doc_manager
+    )
+    target_device_categories, target_device_context = _build_target_device_context(
+        command=test_case.user_command,
+        device_state=device_state_for_prompt,
+        doc_manager=doc_manager,
+        vlm_device_id=vlm_winner,
+    )
 
     for step_idx in range(1, planner_steps_limit + 1):
         planner_prompt = build_chain_planner_prompt(
@@ -1906,6 +2060,12 @@ def evaluate_test_case(
         )
         planner_decision = parse_planner_response(planner_text)
         action = planner_decision["action"]
+        if action in halted_actions:
+            planner_decision["thought"] = (
+                planner_decision.get("thought", "")
+                + " | action halted due to no new info; forcing final_decision"
+            ).strip()
+            action = "final_decision"
         chain_history.append(
             {
                 "step": step_idx,
@@ -1921,10 +2081,10 @@ def evaluate_test_case(
         )
 
         if action in {"preference_lookup", "device_lookup", "weather_lookup"}:
-            if action_failure_counts.get(action, 0) >= MAX_FAILURES_PER_ACTION:
+            if action_failure_counts.get(action, 0) >= planner_max_failures_per_action:
                 if action not in halted_actions:
                     failure_notes.append(
-                        f"{action} skipped: exceeded failure limit ({MAX_FAILURES_PER_ACTION})"
+                        f"{action} skipped: exceeded failure limit ({planner_max_failures_per_action})"
                     )
                     halted_actions.add(action)
                 continue
@@ -1939,7 +2099,9 @@ def evaluate_test_case(
                 query_attempts,
                 failure_notes,
                 action_failure_counts,
+                max_repeat_queries=planner_max_repeat_queries,
             ):
+                halted_actions.add(action)
                 continue
             try:
                 tool_input = json.dumps(
@@ -1959,6 +2121,7 @@ def evaluate_test_case(
                     failure_notes,
                     action_failure_counts,
                 )
+                halted_actions.add(action)
                 continue
             new_pref_snapshot = _serialize_for_compare(user_preferences)
             if new_pref_snapshot == prev_pref_snapshot:
@@ -1968,6 +2131,7 @@ def evaluate_test_case(
                     failure_notes,
                     action_failure_counts,
                 )
+                halted_actions.add(action)
             continue
 
         if action == "device_lookup":
@@ -1978,7 +2142,9 @@ def evaluate_test_case(
                 query_attempts,
                 failure_notes,
                 action_failure_counts,
+                max_repeat_queries=planner_max_repeat_queries,
             ):
+                halted_actions.add(action)
                 continue
             lookup_result = device_lookup_tool.run(query)
             device_facts.append(lookup_result)
@@ -1990,6 +2156,7 @@ def evaluate_test_case(
                     failure_notes,
                     action_failure_counts,
                 )
+                halted_actions.add(action)
             continue
 
         if action == "weather_lookup":
@@ -2004,7 +2171,9 @@ def evaluate_test_case(
                     query_attempts,
                     failure_notes,
                     action_failure_counts,
+                    max_repeat_queries=planner_max_repeat_queries,
                 ):
+                    halted_actions.add(action)
                     continue
                 report = weather_lookup_tool.run(query)
                 weather_facts.append(report)
@@ -2016,13 +2185,14 @@ def evaluate_test_case(
                         failure_notes,
                         action_failure_counts,
                     )
+                    halted_actions.add(action)
             continue
 
         if action == "context_summary":
             context_summary = context_tool.run(
                 user_command=test_case.user_command,
                 user_preferences=user_preferences,
-                device_state=device_state,
+                device_state=device_state_for_prompt,
                 user_memory_snippets=user_memory_snippets,
                 device_lookup_notes=device_facts,
             )
@@ -2034,13 +2204,17 @@ def evaluate_test_case(
             context_summary = context_tool.run(
                 user_command=test_case.user_command,
                 user_preferences=user_preferences,
-                device_state=device_state,
+                device_state=device_state_for_prompt,
                 user_memory_snippets=user_memory_snippets,
                 device_lookup_notes=device_facts,
             )
             CONSOLE.log(f"[green]最终决策前生成上下文摘要: {context_summary}")
 
         _generate_intent_analysis()
+        if environment_overview is None and not enable_environment_overview:
+            environment_overview = "(environment overview disabled)"
+        if intent_analysis is None and not enable_intent_analysis:
+            intent_analysis = "(intent analysis disabled)"
         final_prompt = build_cot_prompt(
             test_case=test_case,
             user_preferences=user_preferences,
@@ -2054,6 +2228,7 @@ def evaluate_test_case(
             weather_reports=weather_facts,
             device_state_focus=device_state_focus,
             target_device_context=target_device_context,
+            intent_reasoning_enabled=enable_intent_analysis,
         )
         final_message = HumanMessage(content=final_prompt)
         final_response = llm([final_message])
@@ -2077,6 +2252,10 @@ def evaluate_test_case(
                 device_lookup_notes=device_facts,
             )
         _generate_intent_analysis()
+        if environment_overview is None and not enable_environment_overview:
+            environment_overview = "(environment overview disabled)"
+        if intent_analysis is None and not enable_intent_analysis:
+            intent_analysis = "(intent analysis disabled)"
         final_prompt = build_cot_prompt(
             test_case=test_case,
             user_preferences=user_preferences,
@@ -2089,6 +2268,7 @@ def evaluate_test_case(
             tv_guide_knowledge=tv_guide_knowledge,
             weather_reports=weather_facts,
             device_state_focus=device_state_focus,
+            intent_reasoning_enabled=enable_intent_analysis,
         )
         final_message = HumanMessage(content=final_prompt)
         final_response = llm([final_message])
@@ -2105,8 +2285,7 @@ def evaluate_test_case(
 
     CONSOLE.log(
         f"[bold]预测是否需要 human_interaction_tool[/bold]: "
-        f"{'需要' if predicted_needs_tool else '不需要'} "
-        f"(期望: {'需要' if test_case.requires_human_interaction else '不需要'})"
+        f"{'需要' if predicted_needs_tool else '不需要'} "        f"(期望: {'需要' if test_case.requires_human_interaction else '不需要'})"
     )
     CONSOLE.log("[bold]LLM 推理摘要[/bold]:")
     CONSOLE.log(final_reasoning)
@@ -2131,13 +2310,14 @@ def evaluate_test_case(
         "target_device_context": target_device_context,
         "target_device_categories": target_device_categories,
         "failure_notes": failure_notes,
+        "vlm_notes": vlm_hint,
     }
 
-    # 将日志写入文件（按命令分类）
+    # 将日志写入文件（按测试用例名分类）
     if log_base_dir is not None:
         try:
-            command_folder = _sanitize_filename(test_case.user_command)
-            case_dir = log_base_dir.joinpath(command_folder)
+            case_folder = _sanitize_filename(test_case.name)
+            case_dir = log_base_dir.joinpath(case_folder)
             case_dir.mkdir(parents=True, exist_ok=True)
 
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
@@ -2167,6 +2347,7 @@ def evaluate_test_case(
                 "target_device_context": target_device_context,
                 "target_device_categories": target_device_categories,
                 "failure_notes": failure_notes,
+                "vlm_notes": vlm_hint,
             }
 
             log_path.write_text(
@@ -2202,15 +2383,40 @@ def run_rag_cot_evaluation(config: RAGCOTConfig = None) -> Dict[str, Any]:
     ]
 
     # 根据配置进一步过滤测试用例
-    if config.test_types_to_include:
-        filtered_cases = [
-            tc
-            for tc in filtered_cases
-            if any(t in config.test_types_to_include for t in tc.types)
-        ]
+    if config.enable_type_filter:
+        if config.only_human_interaction:
+            type_filter = set(config.test_types_to_include or [])
+            type_filter.add("human_interaction")
+            filtered_cases = [
+                tc for tc in filtered_cases if any(t in type_filter for t in tc.types)
+            ]
+        elif config.test_types_to_include:
+            filtered_cases = [
+                tc
+                for tc in filtered_cases
+                if any(t in config.test_types_to_include for t in tc.types)
+            ]
+
+    if config.focus_test_names:
+        focus_set = {
+            name.strip()
+            for name in config.focus_test_names
+            if isinstance(name, str) and name.strip()
+        }
+        if focus_set:
+            filtered_cases = [
+                tc for tc in filtered_cases if tc.name in focus_set
+            ]
 
     if config.max_test_cases is not None and config.max_test_cases > 0:
         filtered_cases = filtered_cases[: config.max_test_cases]
+
+    repeat_runs = max(1, config.repeat_runs_per_test)
+    if repeat_runs > 1:
+        expanded_cases: List[TestCaseInfo] = []
+        for tc in filtered_cases:
+            expanded_cases.extend([tc] * repeat_runs)
+        filtered_cases = expanded_cases
     
     CONSOLE.log(f"[green]共加载 {len(filtered_cases)} 个测试用例")
     
@@ -2281,6 +2487,10 @@ def run_rag_cot_evaluation(config: RAGCOTConfig = None) -> Dict[str, Any]:
             examples=None,  # 零样本模式，不提供示例
             log_base_dir=log_base_dir,
             weather_lookup_tool=weather_lookup_tool,
+            planner_max_repeat_queries=config.planner_max_repeat_queries,
+            planner_max_failures_per_action=config.planner_max_failures_per_action,
+            enable_environment_overview=config.enable_environment_overview,
+            enable_intent_analysis=config.enable_intent_analysis,
         )
         results.append(result)
         
@@ -2350,6 +2560,14 @@ def run_rag_cot_evaluation(config: RAGCOTConfig = None) -> Dict[str, Any]:
                 "max_test_cases": config.max_test_cases,
                 "test_types_to_include": config.test_types_to_include,
                 "device_lookup_max_results": config.device_lookup_max_results,
+                "planner_max_repeat_queries": config.planner_max_repeat_queries,
+                "planner_max_failures_per_action": config.planner_max_failures_per_action,
+                "enable_environment_overview": config.enable_environment_overview,
+                "enable_intent_analysis": config.enable_intent_analysis,
+                "focus_test_names": config.focus_test_names,
+                "repeat_runs_per_test": config.repeat_runs_per_test,
+                "only_human_interaction": config.only_human_interaction,
+                "enable_type_filter": config.enable_type_filter,
                 "llm_model": getattr(config.llm_config, "model_name", "unknown"),
             },
             "summary": summary,
@@ -2409,4 +2627,5 @@ if __name__ == "__main__":
     
     summary = run_rag_cot_evaluation(config)
     print_evaluation_summary(summary)
+
 

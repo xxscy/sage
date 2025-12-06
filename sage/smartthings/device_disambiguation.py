@@ -109,6 +109,18 @@ class VlmDeviceDetector:
         The format of the command string should be the same as that described in the DeviceDisambiguationToolConfig.
         """
 
+        winner, _ = self.identify_device_with_scores(command)
+        return winner
+
+    def identify_device_with_scores(self, command: str) -> tuple[str, list[tuple[str, float]]]:
+        """
+        Identify devices and also return similarity scores.
+
+        Returns:
+            (winner_device_id, [(device_id, score), ...] sorted by score desc)
+            If no valid devices, returns (error_message, []).
+        """
+
         image_dict = self.get_images()
 
         attr_spec = parse_json(command)
@@ -124,14 +136,17 @@ class VlmDeviceDetector:
         # the ID of the device.
 
         if len(attr_spec["devices"]) == 1:
-            return attr_spec["devices"][0]
+            return attr_spec["devices"][0], [(attr_spec["devices"][0], 1.0)]
 
         device_list = sorted(
             self.select_devices(attr_spec["devices"], list(image_dict.keys()))
         )
 
         if not device_list:
-            return "None of the devices you listed were found. Avoid coming up with fake device IDs and consider checking the API planner first. Correct device ID is a guid string not a generic name (e.g. an incorrect name is device1)?"
+            return (
+                "None of the devices you listed were found. Avoid coming up with fake device IDs and consider checking the API planner first. Correct device ID is a guid string not a generic name (e.g. an incorrect name is device1)?",
+                [],
+            )
 
         with torch.no_grad():
             text_embeds = get_text_embeds(
@@ -143,7 +158,11 @@ class VlmDeviceDetector:
                 get_image_embeds(images, self.model, self.device)
             )
 
-            return device_list[np.argmax((text_embeds @ image_embeds.T).squeeze())]
+            sims = (text_embeds @ image_embeds.T).squeeze()
+            ranked_indices = np.argsort(sims)[::-1]
+            ranked = [(device_list[i], float(sims[i])) for i in ranked_indices]
+            winner = ranked[0][0] if ranked else ""
+            return winner, ranked
 
     def get_images(self) -> dict[str, Any]:
         """Load images from image folder."""
