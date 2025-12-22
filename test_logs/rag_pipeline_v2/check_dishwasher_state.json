@@ -1,0 +1,64 @@
+{
+  "test_name": "check_dishwasher_state",
+  "user_command": "Dmitriy: what is the current phase of the dish washing cycle?",
+  "types": [
+    "device_resolution"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": null,
+  "device_lookup": {
+    "candidates": [
+      {
+        "device_id": "67ba495a-7982-42f0-a24a-0b1ffcb9e041",
+        "type": "device",
+        "name": null,
+        "state_excerpt": "main -> videoCapture: stream=None; clip=None | videoStream: stream={} | audioVolume: volume=None | ...",
+        "score": 0.0
+      },
+      {
+        "device_id": "22e11820-64fa-4bed-ad8f-f98ef66de298",
+        "type": "device",
+        "name": null,
+        "state_excerpt": "main -> colorControl: saturation=100; color=1; ... | healthCheck: checkInterval=60; healthStatus=None; ... | switchLevel: level=70 | ...",
+        "score": 0.0
+      },
+      {
+        "device_id": "363f714d-e4fe-4052-a78c-f8c97542e709",
+        "type": "device",
+        "name": null,
+        "state_excerpt": "main -> colorControl: saturation=None; color=None; ... | healthCheck: checkInterval=60; healthStatus=None; ... | switchLevel: level=48 | ...",
+        "score": 0.0
+      }
+    ],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: - 67ba495a-7982-42f0-a24a-0b1ffcb9e041 (device): main -> videoCapture: stream=None; clip=None | videoStream: stream={} | audioVolume: volume=None | ... | - 22e11820-64fa-4bed-ad8f-f98ef66de298 (device): main -> colorControl: saturation=100; color=1; ... | healthCheck: checkInterval=60; healthStatus=None; ... | switchLevel: level=70 | ... | - 363f714d-e4fe-4052-a78c-f8c97542e709 (device): main -> colorControl: saturation=None; color=None; ... | healthCheck: checkInterval=60; healthStatus=None; ... | switchLevel: level=48 | ...\nPreferences/Profile: None\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: User is inquiring about the current phase of the dish washing cycle.\n- Content Verification: no verifiable match\n- Refined Command: UNKNOWN_COMMAND with device_ids: UNKNOWN_DEVICE\n- Confidence: Low\n- Reasoning: \n  1. The command asks for the current phase of a dish washing cycle, but there are no devices listed in the context that are related to dish washing.\n  2. The available devices (identified by their device_ids) do not indicate any functionality related to dish washing or a dish washer.\n  3. Since there is no relevant device to respond to the command, the command is marked as UNKNOWN_COMMAND and the device_id is set to UNKNOWN_DEVICE.\n  4. The confidence is low due to the lack of relevant devices to fulfill the request."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The user is asking for information about the current phase of a dish washing cycle. Step 2 - There are no devices identified in the context that are related to dish washing, leading to a lack of relevant device information. Step 3 - The command is marked as UNKNOWN_COMMAND due to the absence of a corresponding device, and the device_id is set to UNKNOWN_DEVICE. Step 4 - The confidence level is low because the system cannot fulfill the request without a relevant device. Final Verdict: Clarification is required to identify if there is a dish washing device available.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command cannot be processed due to the absence of a relevant device, necessitating human intervention for clarification.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what devices are available to check the dishwashing cycle.",
+      "action": "device_lookup",
+      "query": "current dish washer status"
+    },
+    {
+      "thought": "I need to check the status of the dishwasher to determine the current phase of the dish washing cycle.",
+      "action": "device_lookup",
+      "query": "current phase of the dish washing cycle"
+    },
+    {
+      "thought": "I need to check the status of the dishwasher to determine the current phase of the dish washing cycle.",
+      "action": "device_lookup",
+      "query": "current phase of the dish washing cycle"
+    }
+  ],
+  "is_correct": false
+}

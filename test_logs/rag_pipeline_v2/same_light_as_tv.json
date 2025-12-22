@@ -1,0 +1,50 @@
+{
+  "test_name": "same_light_as_tv",
+  "user_command": "Abhisek : Turn on the light",
+  "types": [
+    "device_resolution",
+    "command_chaining"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "The user preferences do not include any specific information about turning on the light. Additionally, the command history consists solely of repeated instructions regarding turning on the light while the TV is on, without any context about user preferences for lighting. \n\nTherefore, I cannot provide any specific user preferences for turning on the light."
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: The user preferences do not include any specific information about turning on the light. Additionally, the command history consists solely of repeated instructions regarding turning on the light while the TV is on, without any context about user preferences for lighting. \n\nTherefore, I cannot provide any specific user preferences for turning on the light.\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: User wants to turn on the light.\n- Content Verification: no verifiable match\n- Refined Command: \"Abhisek : Turn on the light, device_id: UNKNOWN_DEVICE\"\n- Confidence: Low\n- Reasoning: \n  1. The command \"Abhisek : Turn on the light\" is clear, but there is no specific device identified for the action.\n  2. The device context indicates that there are no candidates available for the command, which means the system cannot determine which light to turn on.\n  3. The command history shows repeated instructions to turn on the light while the TV is on, but does not provide any specific device information or user preferences.\n  4. Given the lack of device context and user preferences, the command is refined to include \"UNKNOWN_DEVICE\" to indicate that the specific device is not identified.\n  5. The confidence is low due to the absence of verifiable device information and the potential for ambiguity in executing the command."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The command \"Abhisek : Turn on the light\" is clear in its intent but lacks specific device identification. Step 2 - The system has identified that there are no candidates available for the command, indicating that it cannot determine which light to turn on. Step 3 - The command history does not provide any specific device information or user preferences, which further complicates the execution of the command. Step 4 - The refined command includes \"UNKNOWN_DEVICE\" to indicate the lack of device identification, and the confidence level is low due to the absence of verifiable device information. Final Verdict: Clarification is required to identify the specific device.\n\nConclusion: Need to use human_interaction_tool\nReason: The command cannot be executed without identifying the specific device to control.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what kind of light the user wants to turn on.",
+      "action": "device_lookup",
+      "query": "Turn on the light"
+    },
+    {
+      "thought": "I need to check the user's preferences to understand how they want the light to be turned on.",
+      "action": "preference_lookup",
+      "query": "User preferences for turning on the light"
+    },
+    {
+      "thought": "I need to check if the light device is available to turn it on.",
+      "action": "device_lookup",
+      "query": "Turn on the light"
+    },
+    {
+      "thought": "I need to check the available devices to find out if there are any lights that can be turned on.",
+      "action": "device_lookup",
+      "query": "Turn on the light"
+    }
+  ],
+  "is_correct": false
+}

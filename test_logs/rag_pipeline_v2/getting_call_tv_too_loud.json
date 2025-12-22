@@ -1,0 +1,98 @@
+{
+  "test_name": "getting_call_tv_too_loud",
+  "user_command": "Amal : I am getting a call, adjust the volume of the TV",
+  "types": [
+    "device_resolution",
+    "intent_resolution"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "There is no information regarding your preferred volume level for the TV in your preferences or command history."
+  },
+  "device_lookup": null,
+  "weather": null,
+  "tv": [
+    {
+      "channel_number": "2",
+      "channel_name": "CTV",
+      "program_name": "Big Bang Theory",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Join a group of quirky scientists and their humorous adventures as they navigate life, love, and the complexities of the universe in this popular sitcom."
+    },
+    {
+      "channel_number": "6",
+      "channel_name": "TSN 1",
+      "program_name": "NHL: MTL vs PHI",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Witness intense ice hockey action as the Montreal Canadiens face off against the Philadelphia Flyers in a thrilling NHL matchup."
+    },
+    {
+      "channel_number": "7",
+      "channel_name": "TSN 2",
+      "program_name": "NBA: TOR vs ATL",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Experience the excitement of basketball as the Toronto Raptors take on the Atlanta Hawks in an electrifying NBA game."
+    },
+    {
+      "channel_number": "9",
+      "channel_name": "National Geographic",
+      "program_name": "Wildlife: Resurrection Island",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Explore the mesmerizing ecosystem of Resurrection Island, where wildlife thrives and unfolds its captivating stories in the heart of nature."
+    },
+    {
+      "channel_number": "10",
+      "channel_name": "Yes TV",
+      "program_name": "Jeopardy!",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Test your knowledge and quick thinking with the legendary quiz show Jeopardy! as contestants engage in intellectual challenges to win prizes and acclaim."
+    }
+  ],
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: There is no information regarding your preferred volume level for the TV in your preferences or command history.\nHistory: (none)\nWeather: None\nTV: 2 CTV -> Big Bang Theory | 6 TSN 1 -> NHL: MTL vs PHI | 7 TSN 2 -> NBA: TOR vs ATL | 9 National Geographic -> Wildlife: Resurrection Island | 10 Yes TV -> Jeopardy!",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: Adjusting TV volume due to an incoming call\n- Content Verification: no verifiable match\n- Refined Command: Adjust the volume of the TV to a safe default level, UNKNOWN_PARAMETER\n- Confidence: High\n- Reasoning: \n  1. The command indicates a need to adjust the TV volume because of an incoming call.\n  2. There are no specific device IDs provided, so I will refer to the TV generically.\n  3. There is no information regarding preferred volume levels in the preferences or command history, so I will set the volume to a safe default level.\n  4. Since there are no devices listed in the environment summary, I cannot specify a device ID, leading to the use of UNKNOWN_PARAMETER for the volume level."
+  },
+  "decision": {
+    "raw": "Reasoning: \nStep 1 - The user command indicates a need to adjust the TV volume due to an incoming call, which is a clear request for device control. \nStep 2 - The refined command suggests adjusting the volume to a safe default level, but it lacks specific parameters for the volume adjustment. \nStep 3 - There are no specific device IDs provided, which means the command cannot be executed with certainty regarding which TV to control. \nStep 4 - Since the required parameters for the volume adjustment cannot be safely defaulted and the device is not clearly identified, clarification is needed.\n\nFinal Verdict: Need\n\nConclusion: Need to use human_interaction_tool\nReason: The command lacks specific parameters for volume adjustment and device identification, necessitating clarification.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out the user's preferences for TV volume adjustments.",
+      "action": "preference_lookup",
+      "query": "What are your preferences for adjusting the TV volume?"
+    },
+    {
+      "thought": "I need to find out what TV content is currently playing to adjust the volume accordingly.",
+      "action": "tv_lookup",
+      "query": "current content on the TV"
+    },
+    {
+      "thought": "I need to find out the user's preferred volume level for the TV to adjust it accordingly.",
+      "action": "preference_lookup",
+      "query": "What is your preferred volume level for the TV?"
+    },
+    {
+      "thought": "I need to find out the current volume level of the TV to adjust it appropriately.",
+      "action": "tv_lookup",
+      "query": "current volume level of the TV"
+    },
+    {
+      "thought": "I need to find out the current volume level of the TV to adjust it appropriately.",
+      "action": "tv_lookup",
+      "query": "current volume level of the TV"
+    },
+    {
+      "thought": "I need to find out the current volume level of the TV to adjust it appropriately for the call.",
+      "action": "tv_lookup",
+      "query": "current volume level of the TV"
+    }
+  ],
+  "is_correct": false
+}

@@ -1,0 +1,54 @@
+{
+  "test_name": "frige_door_light",
+  "user_command": "abhisek : turn on the light in the dining room when the I open the fridge",
+  "types": [
+    "persistence"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "There is no information in your preferences or command history regarding light settings for the dining room when the fridge is opened. Therefore, I cannot provide an answer to your request."
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: There is no information in your preferences or command history regarding light settings for the dining room when the fridge is opened. Therefore, I cannot provide an answer to your request.\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: Turning on the light in the dining room when the fridge is opened.\n- Content Verification: no verifiable match\n- Refined Command: \"abhisek : turn on the light in the dining room when the fridge is opened, UNKNOWN_DEVICE_ID\"\n- Confidence: Low\n- Reasoning: \n  1. The command specifies turning on a light in the dining room based on the action of opening the fridge.\n  2. There are no devices listed in the environment summary, indicating that the system does not recognize any devices to control.\n  3. Since there is no information about the specific light or fridge device IDs, I cannot provide a precise command and must use UNKNOWN_DEVICE_ID for the light.\n  4. The lack of device context and preferences leads to a low confidence in executing the command as intended."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The command involves controlling a device (the light) based on an action (opening the fridge). Step 2 - There are no devices listed in the environment summary, indicating a lack of recognized devices to control. Step 3 - The command cannot be executed accurately due to the absence of specific device IDs, leading to the use of UNKNOWN_DEVICE_ID. Step 4 - The overall lack of device context and parameters results in low confidence in executing the command as intended.\n\nFinal Verdict: Need\nConclusion: Need to use human_interaction_tool\nReason: The command cannot be executed accurately due to missing device information and context.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to understand the user's preferences for light settings before proceeding.",
+      "action": "preference_lookup",
+      "query": "user preferences for light settings in the dining room"
+    },
+    {
+      "thought": "I need to find out what smart devices are available in the user's home to control the light in the dining room.",
+      "action": "device_lookup",
+      "query": "smart devices available in the home for controlling lights"
+    },
+    {
+      "thought": "I need to check if the dining room light can be controlled based on the fridge opening event.",
+      "action": "device_lookup",
+      "query": "dining room light control for automation with fridge opening"
+    },
+    {
+      "thought": "I need to check if the user has any specific preferences for the light settings in the dining room when the fridge is opened.",
+      "action": "preference_lookup",
+      "query": "light settings for dining room when fridge is opened"
+    },
+    {
+      "thought": "I need to check the specific device for the dining room light to ensure it can be controlled as intended.",
+      "action": "device_lookup",
+      "query": "dining room light"
+    }
+  ],
+  "is_correct": false
+}

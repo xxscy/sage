@@ -95,12 +95,42 @@ class VlmDeviceDetector:
     """Use a VLM to find the closest match between a user query (text) and available devices (images)."""
 
     def __init__(self, image_folder: str):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # 尝试检测 CUDA 是否真正可用，如果不可用则回退到 CPU
+        self.device = self._get_safe_device()
         self.image_folder = image_folder
         self.model, _, self.preprocess = clip.create_model_and_transforms(
             "ViT-B-32", pretrained="laion2b_s34b_b79k"
         )
-        self.model = self.model.to(self.device)
+        # 先加载到 CPU，如果需要再移动到 GPU（避免初始化时的 CUDA 错误）
+        self.model = self.model.to("cpu")
+        # 如果设备是 CUDA，尝试移动到 GPU，如果失败则回退到 CPU
+        if self.device == "cuda":
+            try:
+                self.model = self.model.to(self.device)
+                # 测试 CUDA 是否真正可用（执行一个简单的操作）
+                test_tensor = torch.zeros(1).to(self.device)
+                del test_tensor
+            except Exception as exc:
+                # CUDA 不可用，回退到 CPU
+                import warnings
+                warnings.warn(f"CUDA initialization failed, falling back to CPU: {exc}")
+                self.device = "cpu"
+                self.model = self.model.to("cpu")
+    
+    def _get_safe_device(self) -> str:
+        """安全地检测可用的设备，优先使用 CUDA，如果不可用则使用 CPU"""
+        if not torch.cuda.is_available():
+            return "cpu"
+        # 尝试检测 CUDA 是否真正可用（不仅仅是 is_available()）
+        try:
+            # 创建一个测试张量来验证 CUDA 是否真正可用
+            test = torch.zeros(1).cuda()
+            del test
+            torch.cuda.empty_cache()
+            return "cuda"
+        except Exception:
+            # CUDA 不可用，回退到 CPU
+            return "cpu"
 
     def identify_device(self, command: str) -> str:
         """
@@ -149,20 +179,50 @@ class VlmDeviceDetector:
             )
 
         with torch.no_grad():
-            text_embeds = get_text_embeds(
-                attr_spec["disambiguation_information"], self.model, self.device
-            )
-            images = [self.preprocess(image_dict[d]["image"]) for d in device_list]
-            images = torch.stack(images)
-            image_embeds = clean_embeds(
-                get_image_embeds(images, self.model, self.device)
-            )
+            try:
+                text_embeds = get_text_embeds(
+                    attr_spec["disambiguation_information"], self.model, self.device
+                )
+                images = [self.preprocess(image_dict[d]["image"]) for d in device_list]
+                images = torch.stack(images)
+                image_embeds = clean_embeds(
+                    get_image_embeds(images, self.model, self.device)
+                )
 
-            sims = (text_embeds @ image_embeds.T).squeeze()
-            ranked_indices = np.argsort(sims)[::-1]
-            ranked = [(device_list[i], float(sims[i])) for i in ranked_indices]
-            winner = ranked[0][0] if ranked else ""
-            return winner, ranked
+                sims = (text_embeds @ image_embeds.T).squeeze()
+                ranked_indices = np.argsort(sims)[::-1]
+                ranked = [(device_list[i], float(sims[i])) for i in ranked_indices]
+                winner = ranked[0][0] if ranked else ""
+                return winner, ranked
+            except RuntimeError as exc:
+                # 捕获 CUDA 运行时错误，尝试回退到 CPU
+                if "cuda" in str(exc).lower() or "CUDA" in str(exc):
+                    import warnings
+                    warnings.warn(f"CUDA error during inference, falling back to CPU: {exc}")
+                    # 将模型移动到 CPU 并重试
+                    original_device = self.device
+                    self.device = "cpu"
+                    self.model = self.model.to("cpu")
+                    try:
+                        text_embeds = get_text_embeds(
+                            attr_spec["disambiguation_information"], self.model, self.device
+                        )
+                        images = [self.preprocess(image_dict[d]["image"]) for d in device_list]
+                        images = torch.stack(images)
+                        image_embeds = clean_embeds(
+                            get_image_embeds(images, self.model, self.device)
+                        )
+
+                        sims = (text_embeds @ image_embeds.T).squeeze()
+                        ranked_indices = np.argsort(sims)[::-1]
+                        ranked = [(device_list[i], float(sims[i])) for i in ranked_indices]
+                        winner = ranked[0][0] if ranked else ""
+                        return winner, ranked
+                    except Exception as cpu_exc:
+                        return f"VLM inference failed on both CUDA and CPU: {cpu_exc}", []
+                else:
+                    # 非 CUDA 错误，直接抛出
+                    raise
 
     def get_images(self) -> dict[str, Any]:
         """Load images from image folder."""
@@ -173,7 +233,9 @@ class VlmDeviceDetector:
         ]
 
         for filepath in file_list:
-            name = filepath.split("/")[-1].split(".")[0]
+            # 使用 os.path.basename 和 os.path.splitext 来跨平台兼容地提取文件名（不含扩展名）
+            filename = os.path.basename(filepath)
+            name = os.path.splitext(filename)[0]
             image_dict[name] = {}
             image = Image.open(filepath)
             image_dict[name]["filepath"] = filepath

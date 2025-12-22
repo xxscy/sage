@@ -1,0 +1,95 @@
+{
+  "test_name": "is_main_tv_on",
+  "user_command": "Amal : is the TV by the credenza on?",
+  "types": [
+    "device_resolution"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "Based on your preferences, here are the relevant details regarding your TV usage and settings:\n\n1. **Shows Genre**: You enjoy watching shows in the following genres:\n   - Documentary\n   - Drama\n   - Comedy\n   - Fantasy\n\n2. **Favorite Shows**: Your favorite show is \"Modern Family.\"\n\n3. **Command History**: You have shown a strong interest in TV shows, specifically requesting to see TV shows instead of movies multiple times.\n\n4. **Genre to Avoid**: You prefer to avoid horror and violent genres.\n\nIf you have any specific questions or need recommendations based on these preferences, feel free to ask!"
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": [
+    {
+      "channel_number": "1",
+      "channel_name": "CBC",
+      "program_name": "CBC News",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Stay informed with the latest breaking news, in-depth analysis, and investigative reports from around the world on CBC News."
+    },
+    {
+      "channel_number": "2",
+      "channel_name": "CTV",
+      "program_name": "Big Bang Theory",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Join a group of quirky scientists and their humorous adventures as they navigate life, love, and the complexities of the universe in this popular sitcom."
+    },
+    {
+      "channel_number": "9",
+      "channel_name": "National Geographic",
+      "program_name": "Wildlife: Resurrection Island",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Explore the mesmerizing ecosystem of Resurrection Island, where wildlife thrives and unfolds its captivating stories in the heart of nature."
+    },
+    {
+      "channel_number": "10",
+      "channel_name": "Yes TV",
+      "program_name": "Jeopardy!",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Test your knowledge and quick thinking with the legendary quiz show Jeopardy! as contestants engage in intellectual challenges to win prizes and acclaim."
+    },
+    {
+      "channel_number": "3",
+      "channel_name": "PBS Kids",
+      "program_name": "Sesame Street",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Delight in educational and entertaining stories featuring beloved characters as they teach valuable lessons through songs, puppetry, and animation."
+    }
+  ],
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: Based on your preferences, here are the relevant details regarding your TV usage and settings:\n\n1. **Shows Genre**: You enjoy watching shows in the following genres:\n   - Documentary\n   - Drama\n   - Comedy\n   - Fantasy\n\n2. **Favorite Shows**: Your favorite show is \"Modern Family.\"\n\n3. **Command History**: You have shown a strong interest in TV shows, specifically requesting to see TV shows instead of movies multiple times.\n\n4. **Genre to Avoid**: You prefer to avoid horror and violent genres.\n\nIf you have any specific questions or need recommendations based on these preferences, feel free to ask!\nHistory: (none)\nWeather: None\nTV: 1 CBC -> CBC News | 2 CTV -> Big Bang Theory | 9 National Geographic -> Wildlife: Resurrection Island | 10 Yes TV -> Jeopardy! | 3 PBS Kids -> Sesame Street",
+  "intent": {
+    "raw": "- **Request Type**: Device Control\n- **Identified Situation**: Checking if the TV by the credenza is on.\n- **Content Verification**: no verifiable match\n- **Refined Command**: \"Is the TV by the credenza on?\"\n- **Confidence**: High\n- **Reasoning**: \n  1. The original command asks if the TV by the credenza is on, which is a straightforward device control request.\n  2. There are no specific device IDs provided, and the context indicates no devices are currently identified, leading to the use of a general inquiry.\n  3. Since there are no conflicting commands or preferences that would affect the request, the command remains clear and direct.\n  4. The command is structured to ensure clarity and safety, avoiding assumptions about device status or settings."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The user command is a straightforward inquiry about the status of a specific device (the TV by the credenza). Step 2 - The refined command accurately reflects the user's intent without ambiguity. Step 3 - There are no specific device IDs or parameters that need to be defaulted, as the inquiry is general. Step 4 - Since the command is clear and there are no conflicting commands or preferences, it does not require further clarification.\n\nConclusion: Do not need to use human_interaction_tool  \nReason: The command is clear and direct, with no need for additional clarification or parameters.",
+    "needs_tool": false
+  },
+  "planner_history": [
+    {
+      "thought": "I need to check if the user has any specific preferences regarding the TV before determining its status.",
+      "action": "preference_lookup",
+      "query": "Check preferences for TV usage and settings."
+    },
+    {
+      "thought": "I need to find out if the TV is on, so I will look for the device information first.",
+      "action": "device_lookup",
+      "query": "Is the TV by the credenza?"
+    },
+    {
+      "thought": "I need to check the status of the TV to determine if it's on or off.",
+      "action": "tv_lookup",
+      "query": "Is the TV by the credenza on?"
+    },
+    {
+      "thought": "I need to check the status of the TV to determine if it is on or off.",
+      "action": "tv_lookup",
+      "query": "Is the TV by the credenza on?"
+    },
+    {
+      "thought": "I need to check the status of the TV to determine if it is on or off.",
+      "action": "tv_lookup",
+      "query": "Is the TV by the credenza on?"
+    }
+  ],
+  "is_correct": true
+}

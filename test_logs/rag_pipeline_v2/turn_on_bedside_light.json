@@ -1,0 +1,49 @@
+{
+  "test_name": "turn_on_bedside_light",
+  "user_command": "Amal: turn on the light by the bed",
+  "types": [
+    "device_resolution"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "Based on the available preferences and command history, Amal seems to prefer using red light for better sleep quality. However, there are no specific light settings preferences mentioned beyond that. If you need more detailed information or specific settings, please provide additional context or preferences."
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: Based on the available preferences and command history, Amal seems to prefer using red light for better sleep quality. However, there are no specific light settings preferences mentioned beyond that. If you need more detailed information or specific settings, please provide additional context or preferences.\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: Turning on the light by the bed for better sleep quality.\n- Content Verification: no verifiable match\n- Refined Command: \"Amal: turn on the red light by the bed, UNKNOWN_DEVICE\"\n- Confidence: Low\n- Reasoning: \n  1. The command specifies turning on a light by the bed, but there are no devices listed in the context.\n  2. Amal has a preference for red light for better sleep quality, which is incorporated into the command.\n  3. Since there are no specific device IDs provided and no devices are available, I have set the device ID to UNKNOWN_DEVICE.\n  4. The command is explicit in its intent but lacks the necessary device context to ensure successful execution, leading to a low confidence level."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The command specifies turning on a light by the bed, but there are no devices listed in the context, indicating a lack of clarity regarding which device to control. Step 2 - The command incorporates a preference for red light, but without a specific device ID, it cannot be executed as intended. Step 3 - The device ID is set to UNKNOWN_DEVICE due to the absence of identifiable devices, which raises concerns about the command's execution. Step 4 - Given that the command lacks the necessary device context and parameters cannot be safely defaulted, clarification is required to ensure successful execution.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command lacks specific device context, making it unclear which device to control.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what preferences the user has for the light settings.",
+      "action": "preference_lookup",
+      "query": "light settings preferences for Amal"
+    },
+    {
+      "thought": "I need to find out what specific light the user is referring to by the bed.",
+      "action": "device_lookup",
+      "query": "light by the bed"
+    },
+    {
+      "thought": "I need to check the available devices to find the specific light by the bed.",
+      "action": "device_lookup",
+      "query": "light by the bed"
+    },
+    {
+      "thought": "I need to check which light by the bed is available to turn on.",
+      "action": "device_lookup",
+      "query": "light by the bed"
+    }
+  ],
+  "is_correct": false
+}

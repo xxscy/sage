@@ -1,0 +1,96 @@
+{
+  "test_name": "increase_volume_with_dishwasher_on",
+  "user_command": "abhisek : increase the volume of the TV by the credenza whenever the dishwasher is running",
+  "types": [
+    "device_resolution",
+    "persistence"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "There is no information in the user preferences or command history regarding TV volume control or dishwasher operation. Therefore, I cannot provide any insights on those topics."
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": [
+    {
+      "channel_number": "2",
+      "channel_name": "CTV",
+      "program_name": "Big Bang Theory",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Join a group of quirky scientists and their humorous adventures as they navigate life, love, and the complexities of the universe in this popular sitcom."
+    },
+    {
+      "channel_number": "6",
+      "channel_name": "TSN 1",
+      "program_name": "NHL: MTL vs PHI",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Witness intense ice hockey action as the Montreal Canadiens face off against the Philadelphia Flyers in a thrilling NHL matchup."
+    },
+    {
+      "channel_number": "7",
+      "channel_name": "TSN 2",
+      "program_name": "NBA: TOR vs ATL",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Experience the excitement of basketball as the Toronto Raptors take on the Atlanta Hawks in an electrifying NBA game."
+    },
+    {
+      "channel_number": "9",
+      "channel_name": "National Geographic",
+      "program_name": "Wildlife: Resurrection Island",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Explore the mesmerizing ecosystem of Resurrection Island, where wildlife thrives and unfolds its captivating stories in the heart of nature."
+    },
+    {
+      "channel_number": "10",
+      "channel_name": "Yes TV",
+      "program_name": "Jeopardy!",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Test your knowledge and quick thinking with the legendary quiz show Jeopardy! as contestants engage in intellectual challenges to win prizes and acclaim."
+    }
+  ],
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: There is no information in the user preferences or command history regarding TV volume control or dishwasher operation. Therefore, I cannot provide any insights on those topics.\nHistory: (none)\nWeather: None\nTV: 2 CTV -> Big Bang Theory | 6 TSN 1 -> NHL: MTL vs PHI | 7 TSN 2 -> NBA: TOR vs ATL | 9 National Geographic -> Wildlife: Resurrection Island | 10 Yes TV -> Jeopardy!",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: Increase TV volume when dishwasher is running\n- Content Verification: no verifiable match\n- Refined Command: \"abhisek : increase the volume of the TV by the credenza whenever the dishwasher is running, UNKNOWN_DEVICE\"\n- Confidence: Low\n- Reasoning: \n  1. The command specifies increasing the TV volume when the dishwasher is running, but there is no information about the devices available in the environment.\n  2. The command lacks specific device identifiers for the TV and dishwasher, leading to the use of UNKNOWN_DEVICE for the TV.\n  3. There are no preferences or command history related to TV volume control or dishwasher operation, which adds uncertainty to the command execution.\n  4. Therefore, the command is refined to include the necessary action but acknowledges the lack of specific device information."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The command involves controlling devices (TV and dishwasher) but lacks specific identifiers for these devices. Step 2 - The command's context is unclear due to the absence of verifiable device information, leading to the use of UNKNOWN_DEVICE. Step 3 - There are no preferences or command history that could provide additional context or defaults for the command execution. Step 4 - Given the uncertainty regarding the devices involved and the inability to safely default parameters, clarification is required.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command lacks specific device identifiers and context, necessitating clarification to ensure accurate execution.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to gather information about the user's preferences regarding volume control and the specific devices involved in the command.",
+      "action": "preference_lookup",
+      "query": "user preferences for TV volume control and dishwasher operation"
+    },
+    {
+      "thought": "I need to find out what devices are available in the user's smart home to identify the dishwasher and TV.",
+      "action": "device_lookup",
+      "query": "Identify the dishwasher and TV in the smart home."
+    },
+    {
+      "thought": "I need to gather information about the TV to understand its current state and volume settings before proceeding with the command.",
+      "action": "tv_lookup",
+      "query": "current volume of the TV"
+    },
+    {
+      "thought": "I need to check if the dishwasher is running to ensure the command can be executed properly.",
+      "action": "device_lookup",
+      "query": "Check if the dishwasher is currently running."
+    },
+    {
+      "thought": "I need to check if the dishwasher is running to ensure the command can be executed properly.",
+      "action": "device_lookup",
+      "query": "Check if the dishwasher is currently running."
+    }
+  ],
+  "is_correct": false
+}

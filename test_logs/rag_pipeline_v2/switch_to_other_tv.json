@@ -1,0 +1,97 @@
+{
+  "test_name": "switch_to_other_tv",
+  "user_command": "Amal: move this channel to the other TV and turn this one off",
+  "types": [
+    "device_resolution",
+    "command_chaining",
+    "intent_resolution"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "There is no information available regarding Amal's preferences for channel management and device usage in the provided user preferences or command history."
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": [
+    {
+      "channel_number": "10",
+      "channel_name": "Yes TV",
+      "program_name": "Jeopardy!",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Test your knowledge and quick thinking with the legendary quiz show Jeopardy! as contestants engage in intellectual challenges to win prizes and acclaim."
+    },
+    {
+      "channel_number": "1",
+      "channel_name": "CBC",
+      "program_name": "CBC News",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Stay informed with the latest breaking news, in-depth analysis, and investigative reports from around the world on CBC News."
+    },
+    {
+      "channel_number": "2",
+      "channel_name": "CTV",
+      "program_name": "Big Bang Theory",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Join a group of quirky scientists and their humorous adventures as they navigate life, love, and the complexities of the universe in this popular sitcom."
+    },
+    {
+      "channel_number": "3",
+      "channel_name": "PBS Kids",
+      "program_name": "Sesame Street",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Delight in educational and entertaining stories featuring beloved characters as they teach valuable lessons through songs, puppetry, and animation."
+    },
+    {
+      "channel_number": "4",
+      "channel_name": "BBC",
+      "program_name": "BBC News",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Get a global perspective on current events, politics, and culture through comprehensive reporting, interviews, and analysis on BBC News."
+    }
+  ],
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: There is no information available regarding Amal's preferences for channel management and device usage in the provided user preferences or command history.\nHistory: (none)\nWeather: None\nTV: 10 Yes TV -> Jeopardy! | 1 CBC -> CBC News | 2 CTV -> Big Bang Theory | 3 PBS Kids -> Sesame Street | 4 BBC -> BBC News",
+  "intent": {
+    "raw": "- **Request Type:** Device Control\n- **Identified Situation:** Amal wants to move a channel to another TV and turn off the current one.\n- **Content Verification:** no verifiable match\n- **Refined Command:** Move channel 10 (Yes TV) to the other TV and turn off the current TV (UNKNOWN_DEVICE_ID).\n- **Confidence:** Low\n- **Reasoning:**\n  1. The command specifies moving a channel to another TV and turning off the current one, but there is no information about the specific devices involved (e.g., device IDs).\n  2. The command does not specify which TV to move the channel to, leading to ambiguity.\n  3. The channel mentioned (Yes TV) is verified as it is listed in the TV guide.\n  4. Due to the lack of device context and specific device IDs, the command includes UNKNOWN_DEVICE_ID for the current TV.\n  5. Overall, the command is structured to reflect the user's intent while acknowledging the limitations in device information."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The command involves device control, specifically moving a channel and turning off a TV. Step 2 - There is a lack of specific device information, such as device IDs for the TVs involved. Step 3 - The command does not specify which TV to move the channel to, creating ambiguity. Step 4 - Given the absence of verifiable device context and the need for specific parameters, clarification is required. Final Verdict: Need.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command lacks specific device information and clarity on which TV to move the channel to, necessitating human intervention for accurate execution.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what channel Amal wants to move and which TVs are involved in the command.",
+      "action": "tv_lookup",
+      "query": "current channel on the active TV"
+    },
+    {
+      "thought": "I need to understand the user's preferences for channel management and the specific devices involved in the command.",
+      "action": "preference_lookup",
+      "query": "Amal's preferences for channel management and device usage"
+    },
+    {
+      "thought": "I need to find out which devices are available to move the channel to the other TV.",
+      "action": "device_lookup",
+      "query": "Retrieve available TVs to move the channel to."
+    },
+    {
+      "thought": "I need to find out what channel Amal wants to move to the other TV.",
+      "action": "tv_lookup",
+      "query": "current channel on the TV"
+    },
+    {
+      "thought": "I need to find out what channel Amal wants to move to the other TV.",
+      "action": "tv_lookup",
+      "query": "current channel on the TV"
+    }
+  ],
+  "is_correct": false
+}

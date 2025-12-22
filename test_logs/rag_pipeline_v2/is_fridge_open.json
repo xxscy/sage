@@ -1,0 +1,42 @@
+{
+  "test_name": "is_fridge_open",
+  "user_command": "Amal : Is the fridge door open?",
+  "types": [
+    "simple"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": null,
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: None\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: Checking the status of the fridge door\n- Content Verification: no verifiable match\n- Refined Command: UNKNOWN_PARAMETER: \"Is the fridge door open?\"\n- Confidence: Low\n- Reasoning: \n  1. The command is asking about the status of the fridge door, which implies a need for device control.\n  2. There are no devices listed in the environment summary, making it impossible to identify a specific fridge or its status.\n  3. Since there are no candidates or device IDs provided, I cannot create a specific command for a known device.\n  4. Therefore, I set the command to UNKNOWN_PARAMETER, indicating that the necessary parameters to execute the command safely are missing."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The user is asking about the status of the fridge door, indicating a need for device control. Step 2 - There are no devices listed in the environment summary, which means I cannot identify a specific fridge or its status. Step 3 - Without any candidates or device IDs provided, I cannot create a specific command for a known device. Step 4 - Since the necessary parameters to execute the command safely are missing, I conclude that clarification is required.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command lacks the necessary parameters to identify and control the fridge, necessitating human interaction for clarification.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to check which devices are available to determine if the fridge is connected and can report its status.",
+      "action": "device_lookup",
+      "query": "Check for smart fridge status"
+    },
+    {
+      "thought": "I need to check the status of the fridge to determine if the door is open.",
+      "action": "device_lookup",
+      "query": "Is the fridge door open?"
+    },
+    {
+      "thought": "I need to check the status of the fridge to determine if the door is open.",
+      "action": "device_lookup",
+      "query": "Is the fridge door open?"
+    }
+  ],
+  "is_correct": false
+}

@@ -1,0 +1,132 @@
+{
+  "test_name": "put_something_informative",
+  "user_command": "Amal : Put something informative on the tv by the plant.",
+  "types": [
+    "device_resolution",
+    "personalization",
+    "intent_resolution"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "Based on your preferences, it seems you enjoy informative content in the form of documentaries, as well as drama and comedy shows. Given your favorite shows and the genres you like, you might appreciate documentaries that are engaging and possibly have a comedic or dramatic element. If you have any specific topics in mind, feel free to share!"
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": [
+    {
+      "channel_number": "1",
+      "channel_name": "CBC",
+      "program_name": "CBC News",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Stay informed with the latest breaking news, in-depth analysis, and investigative reports from around the world on CBC News."
+    },
+    {
+      "channel_number": "2",
+      "channel_name": "CTV",
+      "program_name": "Big Bang Theory",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Join a group of quirky scientists and their humorous adventures as they navigate life, love, and the complexities of the universe in this popular sitcom."
+    },
+    {
+      "channel_number": "10",
+      "channel_name": "Yes TV",
+      "program_name": "Jeopardy!",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Test your knowledge and quick thinking with the legendary quiz show Jeopardy! as contestants engage in intellectual challenges to win prizes and acclaim."
+    },
+    {
+      "channel_number": "3",
+      "channel_name": "PBS Kids",
+      "program_name": "Sesame Street",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Delight in educational and entertaining stories featuring beloved characters as they teach valuable lessons through songs, puppetry, and animation."
+    },
+    {
+      "channel_number": "6",
+      "channel_name": "TSN 1",
+      "program_name": "NHL: MTL vs PHI",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Witness intense ice hockey action as the Montreal Canadiens face off against the Philadelphia Flyers in a thrilling NHL matchup."
+    }
+  ],
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: Based on your preferences, it seems you enjoy informative content in the form of documentaries, as well as drama and comedy shows. Given your favorite shows and the genres you like, you might appreciate documentaries that are engaging and possibly have a comedic or dramatic element. If you have any specific topics in mind, feel free to share!\nHistory: (none)\nWeather: None\nTV: 1 CBC -> CBC News | 2 CTV -> Big Bang Theory | 10 Yes TV -> Jeopardy! | 3 PBS Kids -> Sesame Street | 6 TSN 1 -> NHL: MTL vs PHI",
+  "intent": {
+    "raw": "- Request Type: Content Consumption\n- Identified Situation: User wants to display informative content on the TV by the plant.\n- Content Verification: match found\n- Refined Command: \"Amal: Put CBC News on the TV by the plant.\"\n- Confidence: High\n- Reasoning: \n  1. The user requested informative content, which aligns with their preference for documentaries and news.\n  2. The TV guide lists \"CBC News\" as a program that provides the latest breaking news and in-depth analysis, making it a suitable choice for informative content.\n  3. The command specifies the TV by the plant, and since there are no disambiguation issues or device IDs provided, I assume the command is directed to the appropriate TV in that location.\n  4. The other options (like sitcoms or quiz shows) do not align as closely with the user's preference for informative content."
+  },
+  "decision": {
+    "raw": "Reasoning: \nStep 1 - The user command clearly specifies a desire for informative content, which has been identified and matched with \"CBC News.\"\nStep 2 - The content verification confirms that \"CBC News\" is indeed a suitable choice for the user's request for informative content.\nStep 3 - The command specifies the location of the TV (by the plant), and there are no ambiguities regarding which device to control.\nStep 4 - Since all necessary parameters are verified and aligned with the user's request, there is no need for further clarification.\n\nFinal Verdict: Do not need to use human_interaction_tool\nConclusion: Do not need to use human_interaction_tool\nReason: The command is clear, and the content is verified as suitable for the user's request.",
+    "needs_tool": false
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out the user's preferences for informative content to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content do you prefer to display on the TV?"
+    },
+    {
+      "thought": "I need to find out what devices are available to display content on the TV.",
+      "action": "device_lookup",
+      "query": "Identify the TV and any other devices that can display content near the plant."
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content would you like to see on the TV?"
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content would you like to see on the TV?"
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "tv_lookup",
+      "query": "informative content for the TV by the plant"
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content would you like to see on the TV?"
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content would you like to see on the TV?"
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content would you like to see on the TV?"
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content would you like to see on the TV?"
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content would you like to see on the TV?"
+    },
+    {
+      "thought": "I need to find out what kind of informative content to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content does Amal prefer to see on the TV?"
+    },
+    {
+      "thought": "I need to find out what kind of informative content the user wants to display on the TV.",
+      "action": "preference_lookup",
+      "query": "What type of informative content would you like to see on the TV?"
+    }
+  ],
+  "is_correct": true
+}

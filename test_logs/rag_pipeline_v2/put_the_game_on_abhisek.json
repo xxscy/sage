@@ -1,0 +1,82 @@
+{
+  "test_name": "put_the_game_on_abhisek",
+  "user_command": "abhisek : put the game on the tv by the credenza",
+  "types": [
+    "device_resolution",
+    "personalization",
+    "intent_resolution"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": null,
+  "device_lookup": null,
+  "weather": null,
+  "tv": [
+    {
+      "channel_number": "7",
+      "channel_name": "TSN 2",
+      "program_name": "NBA: TOR vs ATL",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Experience the excitement of basketball as the Toronto Raptors take on the Atlanta Hawks in an electrifying NBA game."
+    },
+    {
+      "channel_number": "1",
+      "channel_name": "CBC",
+      "program_name": "CBC News",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Stay informed with the latest breaking news, in-depth analysis, and investigative reports from around the world on CBC News."
+    },
+    {
+      "channel_number": "2",
+      "channel_name": "CTV",
+      "program_name": "Big Bang Theory",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Join a group of quirky scientists and their humorous adventures as they navigate life, love, and the complexities of the universe in this popular sitcom."
+    },
+    {
+      "channel_number": "3",
+      "channel_name": "PBS Kids",
+      "program_name": "Sesame Street",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Delight in educational and entertaining stories featuring beloved characters as they teach valuable lessons through songs, puppetry, and animation."
+    },
+    {
+      "channel_number": "4",
+      "channel_name": "BBC",
+      "program_name": "BBC News",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Get a global perspective on current events, politics, and culture through comprehensive reporting, interviews, and analysis on BBC News."
+    }
+  ],
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: None\nHistory: (none)\nWeather: None\nTV: 7 TSN 2 -> NBA: TOR vs ATL | 1 CBC -> CBC News | 2 CTV -> Big Bang Theory | 3 PBS Kids -> Sesame Street | 4 BBC -> BBC News",
+  "intent": {
+    "raw": "- Request Type: Content Consumption\n- Identified Situation: User wants to watch a basketball game on TV.\n- Content Verification: match found\n- Refined Command: \"put the game on the TV by the credenza, channel 7 (TSN 2) for NBA: TOR vs ATL\"\n- Confidence: High\n- Reasoning: \n  1. The command specifies to put a game on the TV, which indicates a desire for content consumption.\n  2. The TV guide lists a relevant program, \"NBA: TOR vs ATL,\" on channel 7 (TSN 2) at the current time.\n  3. The command does not specify any device context, but since the user is asking to put the game on the TV, it is reasonable to assume the TV is the intended device.\n  4. There are no conflicting preferences or device contexts that would alter the command.\n  5. Therefore, the refined command explicitly states the action to be taken, the device (TV), and the channel to tune into for the desired content."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The user command indicates a desire to watch a specific game on the TV. Step 2 - The refined command confirms that the game is available on channel 7 (TSN 2) and specifies the teams playing. Step 3 - The command does not present any ambiguity regarding the device, as it clearly states \"the TV by the credenza.\" Step 4 - All necessary parameters for content consumption are verified and clear, with no conflicting information. Final Verdict: No clarification is required.\n\nConclusion: Do not need to use human_interaction_tool  \nReason: The command is clear, and all necessary information for execution is provided.",
+    "needs_tool": false
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what game the user wants to watch on the TV.",
+      "action": "tv_lookup",
+      "query": "game"
+    },
+    {
+      "thought": "I need to find out what game the user wants to watch on the TV.",
+      "action": "tv_lookup",
+      "query": "game"
+    },
+    {
+      "thought": "I need to find out what game the user wants to watch on the TV.",
+      "action": "tv_lookup",
+      "query": "game"
+    }
+  ],
+  "is_correct": true
+}

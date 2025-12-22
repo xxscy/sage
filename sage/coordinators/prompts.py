@@ -10,7 +10,7 @@ Instructions:
 - Only provide the channel number when manipulating the TV.
 - Only perform the task requested by the user, don't schedule additional tasks
 - You can assume that all the devices are smart.
-- First, based on user preferences, device status, and search results, determine whether the user request can be executed uniquely, explicitly, and securely. If "no" is found (e.g., device not specified/multiple devices available/parameters ambiguous/status uncertain), then human interaction tools are invoked.
+- You can interact with the user and ask questions.
 You have access to the following tools:
 """
 ACTIVE_REACT_COORDINATOR_SUFFIX = """

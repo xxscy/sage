@@ -1,0 +1,49 @@
+{
+  "test_name": "control_fridge_temp",
+  "user_command": "Abhisek : Change the fridge internal temperature to 5 degrees Celsius",
+  "types": [
+    "simple"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "There is no information pertaining to fridge temperature preferences for Abhisek in the user preferences or command history."
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: There is no information pertaining to fridge temperature preferences for Abhisek in the user preferences or command history.\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: Changing the internal temperature of a fridge\n- Content Verification: no verifiable match\n- Refined Command: \"Change the fridge internal temperature to 5 degrees Celsius, UNKNOWN_DEVICE\"\n- Confidence: Low\n- Reasoning: \n  1. The command specifies changing the fridge temperature, but there is no device context provided that identifies a specific fridge.\n  2. There are no preferences or historical commands related to fridge temperature for Abhisek, which means I cannot infer any specific device or settings.\n  3. Since there are no devices listed in the environment summary, I must use \"UNKNOWN_DEVICE\" to indicate that the specific fridge is not identified.\n  4. The command is clear in its intent, but due to the lack of device identification, the confidence in executing this command safely is low."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The command specifies changing the fridge temperature, but there is no specific fridge identified, leading to uncertainty about which device to control. Step 2 - There are no preferences or historical commands related to fridge temperature for Abhisek, indicating a lack of context for the command. Step 3 - The absence of devices in the environment summary necessitates the use of \"UNKNOWN_DEVICE,\" which further reduces confidence in executing the command. Step 4 - Given the lack of device identification and the inability to safely default to a specific fridge, clarification is required to ensure the command is executed correctly. Final Verdict: Need.\n\nConclusion: Need to use human_interaction_tool  \nReason: Lack of device identification and context necessitates clarification before proceeding with the command.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what preferences Abhisek has regarding the fridge settings.",
+      "action": "preference_lookup",
+      "query": "fridge temperature preferences for Abhisek"
+    },
+    {
+      "thought": "I need to find out what type of fridge the user has to change its internal temperature.",
+      "action": "device_lookup",
+      "query": "fridge type for Abhisek"
+    },
+    {
+      "thought": "I need to check the device details for the fridge to ensure I can change its temperature.",
+      "action": "device_lookup",
+      "query": "Change the fridge internal temperature to 5 degrees Celsius"
+    },
+    {
+      "thought": "I need to check the device details for the fridge to ensure I can change its temperature.",
+      "action": "device_lookup",
+      "query": "Change the fridge internal temperature to 5 degrees Celsius"
+    }
+  ],
+  "is_correct": false
+}

@@ -1,0 +1,95 @@
+{
+  "test_name": "get_current_channel",
+  "user_command": "Amal: what channel is playing on the TV?",
+  "types": [
+    "device_resolution"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "Based on the available preferences, there is no specific information regarding TV channel preferences. However, I can infer that you enjoy shows in the comedy, documentary, drama, and fantasy genres, as well as shows similar to \"Modern Family.\" If you have any specific channels in mind or would like recommendations based on your favorite genres, please let me know!"
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": [
+    {
+      "channel_number": "10",
+      "channel_name": "Yes TV",
+      "program_name": "Jeopardy!",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Test your knowledge and quick thinking with the legendary quiz show Jeopardy! as contestants engage in intellectual challenges to win prizes and acclaim."
+    },
+    {
+      "channel_number": "1",
+      "channel_name": "CBC",
+      "program_name": "CBC News",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Stay informed with the latest breaking news, in-depth analysis, and investigative reports from around the world on CBC News."
+    },
+    {
+      "channel_number": "2",
+      "channel_name": "CTV",
+      "program_name": "Big Bang Theory",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Join a group of quirky scientists and their humorous adventures as they navigate life, love, and the complexities of the universe in this popular sitcom."
+    },
+    {
+      "channel_number": "3",
+      "channel_name": "PBS Kids",
+      "program_name": "Sesame Street",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Delight in educational and entertaining stories featuring beloved characters as they teach valuable lessons through songs, puppetry, and animation."
+    },
+    {
+      "channel_number": "4",
+      "channel_name": "BBC",
+      "program_name": "BBC News",
+      "start_ts": "00:19:00",
+      "end_ts": "00:20:00",
+      "program_desc": "Get a global perspective on current events, politics, and culture through comprehensive reporting, interviews, and analysis on BBC News."
+    }
+  ],
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: Based on the available preferences, there is no specific information regarding TV channel preferences. However, I can infer that you enjoy shows in the comedy, documentary, drama, and fantasy genres, as well as shows similar to \"Modern Family.\" If you have any specific channels in mind or would like recommendations based on your favorite genres, please let me know!\nHistory: (none)\nWeather: None\nTV: 10 Yes TV -> Jeopardy! | 1 CBC -> CBC News | 2 CTV -> Big Bang Theory | 3 PBS Kids -> Sesame Street | 4 BBC -> BBC News",
+  "intent": {
+    "raw": "- **Request Type:** Content Consumption\n- **Identified Situation:** User inquires about the current TV channel being played.\n- **Content Verification:** match found\n- **Refined Command:** \"Amal: check the current channel on the TV.\"\n- **Confidence:** High\n- **Reasoning:**\n  1. The user asked about the channel currently playing on the TV.\n  2. The device context indicates no disambiguation is needed, and there are no specific device IDs provided.\n  3. The TV guide lists several channels and their current programs, confirming that there is content available to verify.\n  4. The command is structured to explicitly ask for the current channel, which aligns with the user's request."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The user is inquiring about the current TV channel, which falls under Content Consumption. Step 2 - The situation is clearly identified, and the command has been refined to explicitly ask for the current channel. Step 3 - The content verification indicates a match has been found, confirming that there is content available to verify. Step 4 - Since the device context is clear and no disambiguation is needed, there are no unknowns or unverified sources that would require clarification. Final Verdict: No clarification is required.\n\nConclusion: Do not need to use human_interaction_tool  \nReason: The user's request is clear, and the context is verified without ambiguity.",
+    "needs_tool": false
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what the user prefers to watch on TV to determine the channel.",
+      "action": "preference_lookup",
+      "query": "What are your TV channel preferences?"
+    },
+    {
+      "thought": "I need to find out what TV device is being used to determine the channel.",
+      "action": "device_lookup",
+      "query": "Identify the TV device being used by the user."
+    },
+    {
+      "thought": "I need to find out what is currently playing on the TV to answer the user's question.",
+      "action": "tv_lookup",
+      "query": "current channel playing on the TV"
+    },
+    {
+      "thought": "I need to find out what channel is currently playing on the TV.",
+      "action": "tv_lookup",
+      "query": "current channel playing on the TV"
+    },
+    {
+      "thought": "I need to find out what channel is currently playing on the TV.",
+      "action": "tv_lookup",
+      "query": "current channel playing on the TV"
+    }
+  ],
+  "is_correct": true
+}

@@ -1,0 +1,66 @@
+{
+  "test_name": "turn_it_off",
+  "user_command": "Abhisek : Turn it off.",
+  "types": [
+    "device_resolution",
+    "human_interaction",
+    "intent_resolution"
+  ],
+  "requires_human_interaction": true,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": null,
+  "device_lookup": {
+    "candidates": [
+      {
+        "device_id": "67ba495a-7982-42f0-a24a-0b1ffcb9e041",
+        "type": "device",
+        "name": null,
+        "state_excerpt": "main -> videoCapture: stream=None; clip=None | videoStream: stream={} | audioVolume: volume=None | ...",
+        "score": 0.0
+      },
+      {
+        "device_id": "22e11820-64fa-4bed-ad8f-f98ef66de298",
+        "type": "device",
+        "name": null,
+        "state_excerpt": "main -> colorControl: saturation=100; color=1; ... | healthCheck: checkInterval=60; healthStatus=None; ... | switchLevel: level=70 | ...",
+        "score": 0.0
+      },
+      {
+        "device_id": "363f714d-e4fe-4052-a78c-f8c97542e709",
+        "type": "device",
+        "name": null,
+        "state_excerpt": "main -> colorControl: saturation=None; color=None; ... | healthCheck: checkInterval=60; healthStatus=None; ... | switchLevel: level=48 | ...",
+        "score": 0.0
+      }
+    ],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: - 67ba495a-7982-42f0-a24a-0b1ffcb9e041 (device): main -> videoCapture: stream=None; clip=None | videoStream: stream={} | audioVolume: volume=None | ... | - 22e11820-64fa-4bed-ad8f-f98ef66de298 (device): main -> colorControl: saturation=100; color=1; ... | healthCheck: checkInterval=60; healthStatus=None; ... | switchLevel: level=70 | ... | - 363f714d-e4fe-4052-a78c-f8c97542e709 (device): main -> colorControl: saturation=None; color=None; ... | healthCheck: checkInterval=60; healthStatus=None; ... | switchLevel: level=48 | ...\nPreferences/Profile: None\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: User wants to turn off a device.\n- Content Verification: no verifiable match\n- Refined Command: {\"command\": \"Turn it off\", \"device_id\": \"UNKNOWN_DEVICE\"}\n- Confidence: Low\n- Reasoning: \n  1. The command \"Turn it off\" is a general request to power down a device.\n  2. There are three devices listed in the context, but none are explicitly named or identified as the target for the command.\n  3. Since there is no specific device name or identifier provided, I cannot determine which device to turn off.\n  4. As a result, I have set the device_id to \"UNKNOWN_DEVICE\" to indicate that the command cannot be executed without further clarification."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The command \"Turn it off\" is a general request without specifying which device to turn off. Step 2 - There are multiple devices in the context, but none are named or identified. Step 3 - The lack of a specific device name or identifier means the command cannot be executed as is. Step 4 - Therefore, clarification is required to identify the target device for the command. Final Verdict: Need clarification.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command lacks a specific device identifier, making it impossible to execute without further information.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to identify which device Abhisek wants to turn off.",
+      "action": "device_lookup",
+      "query": "Turn off the device"
+    },
+    {
+      "thought": "The command to turn something off is vague without knowing the specific device. I need to clarify which device the user is referring to.",
+      "action": "device_lookup",
+      "query": "Turn off what device?"
+    },
+    {
+      "thought": "I need to determine which device Abhisek wants to turn off.",
+      "action": "device_lookup",
+      "query": "Turn off the device"
+    }
+  ],
+  "is_correct": true
+}

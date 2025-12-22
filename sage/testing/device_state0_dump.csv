@@ -1,0 +1,385 @@
+device_id,device_name,component,capability,attribute,value
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,videoCapture,stream,
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,videoCapture,clip,
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,videoStream,stream,{}
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,audioVolume,volume,
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,imageCapture,image,https://mediaserv.media40.ec2.st-av.net/image?source_id=67ba495a-7982-42f0-a24a-0b1ffcb9e041&image_id=ae1bc8dc-65aa-4fed-9163-b661dc48365f&correlationId=test
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,imageCapture,encrypted,
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,imageCapture,captureTime,2023-07-28T19:36:29.000Z
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,objectDetection,detected,"{'value': 'none', 'qty': 0, 'data': {'qty': 0}}"
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,objectDetection,supportedValues,"['human', 'none']"
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,signalStrength,rssi,-37
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,signalStrength,lqi,100
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,healthCheck,checkInterval,60
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,healthCheck,healthStatus,
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,healthCheck,DeviceWatch-Enroll,
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,healthCheck,DeviceWatch-DeviceStatus,
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,soundSensor,sound,not detected
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,motionSensor,motion,inactive
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,audioStream,uri,wss://gateway26.ec2.st-av.net:8576/UGosJWOjOSzFNxhOTDrGS
+67ba495a-7982-42f0-a24a-0b1ffcb9e041,sercomm.rc8335.default,main,switch,switch,on
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,colorControl,saturation,100
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,colorControl,color,1
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,colorControl,hue,0
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,healthCheck,checkInterval,60
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,healthCheck,healthStatus,
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,healthCheck,DeviceWatch-Enroll,
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,healthCheck,DeviceWatch-DeviceStatus,online
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,switchLevel,level,70
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,switch,switch,on
+22e11820-64fa-4bed-ad8f-f98ef66de298,meross-Light-Strip,main,colorTemperature,colorTemperature,2700
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,colorControl,saturation,
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,colorControl,color,
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,colorControl,hue,
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,healthCheck,checkInterval,60
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,healthCheck,healthStatus,
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,healthCheck,DeviceWatch-Enroll,
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,healthCheck,DeviceWatch-DeviceStatus,online
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,switchLevel,level,48
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,switch,switch,on
+363f714d-e4fe-4052-a78c-f8c97542e709,meross-Light-Strip,main,colorTemperature,colorTemperature,7000
+2214d9f0-4404-4bf6-a0d0-aaee20458d66,c2c-switch,main,healthCheck,checkInterval,60
+2214d9f0-4404-4bf6-a0d0-aaee20458d66,c2c-switch,main,healthCheck,healthStatus,
+2214d9f0-4404-4bf6-a0d0-aaee20458d66,c2c-switch,main,healthCheck,DeviceWatch-Enroll,
+2214d9f0-4404-4bf6-a0d0-aaee20458d66,c2c-switch,main,healthCheck,DeviceWatch-DeviceStatus,online
+2214d9f0-4404-4bf6-a0d0-aaee20458d66,c2c-switch,main,switch,switch,off
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,mediaPlayback,supportedPlaybackCommands,"['play', 'pause', 'stop', 'fastForward', 'rewind']"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,mediaPlayback,playbackStatus,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,samsungvd.supportsPowerOnByOcf,supportsPowerOnByOcf,true
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,mediaInputSource,supportedInputSources,"['digitalTv', 'HDMI1', 'HDMI4']"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,mediaInputSource,inputSource,HDMI4
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,switch,switch,on
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,st,2023-09-26T12:18:12Z
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mndt,2019-01-01
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mnfv,T-MSMAKUC-1401.0
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mnhw,0-0
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,di,415228e4-456c-44b1-8602-70f98c67fba8
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mnsl,http://www.samsung.com/sec/tv/overview/
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,dmv,"res.1.1.0,sh.1.1.0"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,n,[TV] Samsung The Frame (49)
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mnmo,QN49LS03RAFXZC
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,vid,VD-STV_2018_K
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mnmn,Samsung Electronics
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mnml,http://www.samsung.com
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mnpv,Tizen 5.0
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,mnos,4.1.10
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,pi,415228e4-456c-44b1-8602-70f98c67fba8
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,ocf,icv,core.1.1.0
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,custom.disabledCapabilities,disabledCapabilities,"['samsungvd.ambient', 'samsungvd.ambient18', 'samsungvd.ambientContent', 'sec.diagnosticsInformation']"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,logType,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,endpoint,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,minVersion,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,signinPermission,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,setupId,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,protocolType,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,tsId,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,mnId,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,sec.diagnosticsInformation,dumpType,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,samsungvd.firmwareVersion,firmwareVersion,2.4.0
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,audioVolume,volume,6
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,samsungvd.mediaInputSource,supportedInputSourcesMap,"[{'id': 'dtv', 'name': 'TV'}, {'id': 'HDMI1', 'name': 'Chromecast'}, {'id': 'HDMI4', 'name': 'Bell'}]"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,samsungvd.mediaInputSource,inputSource,HDMI4
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,custom.error,error,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,execute,data,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,tvChannel,tvChannel,
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,tvChannel,tvChannelName,art
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,custom.picturemode,pictureMode,Dynamic
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,custom.picturemode,supportedPictureModes,"['Dynamic', 'Standard', 'Natural', 'Movie']"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,custom.picturemode,supportedPictureModesMap,"[{'id': 'modeDynamic', 'name': 'Dynamic'}, {'id': 'modeStandard', 'name': 'Standard'}, {'id': 'modeNatural', 'name': 'Natural'}, {'id': 'modeMovie', 'name': 'Movie'}]"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,samsungvd.ambientContent,supportedAmbientApps,[]
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,custom.soundmode,supportedSoundModesMap,"[{'id': 'modeStandard', 'name': 'Standard'}, {'id': 'modeAmplify', 'name': 'Amplify'}]"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,custom.soundmode,soundMode,Amplify
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,custom.soundmode,supportedSoundModes,"['Standard', 'Amplify']"
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,audioMute,mute,unmuted
+415228e4-456c-44b1-8602-70f98c67fba8,[TV] Samsung The Frame (49),main,mediaTrackControl,supportedTrackControlCommands,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingCourse,customCourseCandidates,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingCourse,washingCourse,express
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingCourse,supportedCourses,"['auto', 'normal', 'heavy', 'delicate', 'express', 'rinseOnly', 'selfClean']"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,dishwasherOperatingState,completionTime,2023-10-02T15:07:12Z
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,dishwasherOperatingState,machineState,stop
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,dishwasherOperatingState,supportedMachineStates,"['stop', 'run', 'pause']"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,dishwasherOperatingState,dishwasherJobState,unknown
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,dryPlus,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,stormWash,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,hotAirDry,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,selectedZone,"{'value': 'all', 'settable': ['none', 'upper', 'lower', 'all']}"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,speedBooster,"{'value': False, 'settable': [False, True]}"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,highTempWash,"{'value': False, 'settable': [False, True]}"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,sanitizingWash,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,zoneBooster,"{'value': 'none', 'settable': ['none', 'left', 'right', 'all']}"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,addRinse,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,supportedList,"['selectedZone', 'zoneBooster', 'speedBooster', 'sanitize', 'highTempWash']"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,rinsePlus,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,sanitize,"{'value': False, 'settable': [False, True]}"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingOptions,steamSoak,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.deviceIdentification,micomAssayCode,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.deviceIdentification,modelName,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.deviceIdentification,serialNumber,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.deviceIdentification,serialNumberExtra,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.deviceIdentification,modelClassificationCode,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.deviceIdentification,description,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.deviceIdentification,binaryId,DA_DW_A51_20_COMMON
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.dishwasherOperatingProgress,dishwasherOperatingProgress,none
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,switch,switch,off
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.waterConsumptionReport,waterConsumption,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,st,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mndt,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mnfv,DA_DW_A51_20_COMMON_30220418
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mnhw,ARTIK051
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,di,6c645f61-0b82-235f-e476-8a6afc0e73dc
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mnsl,http://www.samsung.com
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,dmv,"res.1.1.0,sh.1.1.0"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,n,[dishwasher] Samsung
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mnmo,DA_DW_A51_20_COMMON|30007242|40010201001311000101000000000000
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,vid,DA-WM-DW-000001
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mnmn,Samsung Electronics
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mnml,http://www.samsung.com
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mnpv,DAWIT 2.0
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,mnos,TizenRT 1.0 + IPv6
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,pi,6c645f61-0b82-235f-e476-8a6afc0e73dc
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,ocf,icv,core.1.1.0
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.disabledCapabilities,disabledCapabilities,"['samsungce.waterConsumptionReport', 'sec.wifiConfiguration', 'demandResponseLoadControl', 'sec.diagnosticsInformation', 'custom.waterFilter']"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.driverVersion,versionNumber,23070102
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,logType,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,endpoint,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,minVersion,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,signinPermission,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,setupId,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,protocolType,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,tsId,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,mnId,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.diagnosticsInformation,dumpType,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherOperation,supportedOperatingState,"['ready', 'running', 'paused']"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherOperation,operatingState,ready
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherOperation,reservable,False
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherOperation,progressPercentage,1
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherOperation,remainingTimeStr,01:00
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherOperation,operationTime,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherOperation,remainingTime,60.0
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherOperation,timeLeftToStart,0.0
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherJobState,scheduledJobs,"[{'jobName': 'washing', 'timeInSec': 1530}, {'jobName': 'rinsing', 'timeInSec': 480}, {'jobName': 'drying', 'timeInSec': 870}]"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherJobState,dishwasherJobState,none
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.kidsLock,lockState,unlocked
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,demandResponseLoadControl,drlcStatus,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,powerConsumptionReport,powerConsumption,"{'energy': 109900, 'deltaEnergy': 0, 'power': 0, 'powerEnergy': 0.0, 'persistedEnergy': 0, 'energySaved': 0, 'start': '2023-10-02T13:57:12Z', 'end': '2023-10-02T14:05:56Z'}"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingCourseDetails,predefinedCourses,"[{'courseName': 'auto', 'energyUsage': 3, 'waterUsage': 3, 'temperature': {'min': 50, 'max': 60, 'unit': 'C'}, 'expectedTime': {'time': 136, 'unit': 'min'}, 'options': {'highTempWash': {'default': False, 'settable': [False, True]}, 'sanitize': {'default': False, 'settable': [False, True]}, 'speedBooster': {'default': False, 'settable': [False, True]}, 'zoneBooster': {'default': 'none', 'settable': ['none', 'left']}, 'selectedZone': {'default': 'all', 'settable': ['none', 'lower', 'all']}}}, {'courseName': 'normal', 'energyUsage': 3, 'waterUsage': 4, 'temperature': {'min': 45, 'max': 62, 'unit': 'C'}, 'expectedTime': {'time': 148, 'unit': 'min'}, 'options': {'highTempWash': {'default': False, 'settable': [False, True]}, 'sanitize': {'default': False, 'settable': [False, True]}, 'speedBooster': {'default': False, 'settable': [False, True]}, 'zoneBooster': {'default': 'none', 'settable': ['none', 'left']}, 'selectedZone': {'default': 'all', 'settable': ['none', 'lower', 'all']}}}, {'courseName': 'heavy', 'energyUsage': 4, 'waterUsage': 5, 'temperature': {'min': 65, 'max': 65, 'unit': 'C'}, 'expectedTime': {'time': 155, 'unit': 'min'}, 'options': {'highTempWash': {'default': False, 'settable': [False, True]}, 'sanitize': {'default': False, 'settable': [False, True]}, 'speedBooster': {'default': False, 'settable': [False, True]}, 'zoneBooster': {'default': 'none', 'settable': ['none', 'left']}, 'selectedZone': {'default': 'all', 'settable': ['none', 'lower', 'all']}}}, {'courseName': 'delicate', 'energyUsage': 2, 'waterUsage': 3, 'temperature': {'min': 50, 'max': 50, 'unit': 'C'}, 'expectedTime': {'time': 112, 'unit': 'min'}, 'options': {'highTempWash': {'default': False, 'settable': []}, 'sanitize': {'default': False, 'settable': []}, 'speedBooster': {'default': False, 'settable': [False, True]}, 'zoneBooster': {'default': 'none', 'settable': []}, 'selectedZone': {'default': 'all', 'settable': ['none', 'lower', 'all']}}}, {'courseName': 'express', 'energyUsage': 2, 'waterUsage': 2, 'temperature': {'min': 52, 'max': 52, 'unit': 'C'}, 'expectedTime': {'time': 60, 'unit': 'min'}, 'options': {'highTempWash': {'default': False, 'settable': [False, True]}, 'sanitize': {'default': False, 'settable': [False, True]}, 'speedBooster': {'default': False, 'settable': []}, 'zoneBooster': {'default': 'none', 'settable': ['none', 'left']}, 'selectedZone': {'default': 'all', 'settable': ['none', 'lower', 'all']}}}, {'courseName': 'rinseOnly', 'energyUsage': 1, 'waterUsage': 1, 'temperature': {'min': 40, 'max': 40, 'unit': 'C'}, 'expectedTime': {'time': 14, 'unit': 'min'}, 'options': {'highTempWash': {'default': False, 'settable': []}, 'sanitize': {'default': False, 'settable': []}, 'speedBooster': {'default': False, 'settable': []}, 'zoneBooster': {'default': 'none', 'settable': []}, 'selectedZone': {'default': 'all', 'settable': ['none', 'lower', 'all']}}}, {'courseName': 'selfClean', 'energyUsage': 5, 'waterUsage': 4, 'temperature': {'min': 70, 'max': 70, 'unit': 'C'}, 'expectedTime': {'time': 139, 'unit': 'min'}, 'options': {'highTempWash': {'default': False, 'settable': []}, 'sanitize': {'default': False, 'settable': []}, 'speedBooster': {'default': False, 'settable': []}, 'zoneBooster': {'default': 'none', 'settable': []}, 'selectedZone': {'default': 'all', 'settable': ['none', 'all']}}}]"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingCourseDetails,waterUsageMax,5
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.dishwasherWashingCourseDetails,energyUsageMax,5
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,execute,data,"{'payload': {'rt': ['oic.r.energy.consumption'], 'if': ['oic.if.baseline', 'oic.if.a']}}"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.wifiConfiguration,autoReconnection,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.wifiConfiguration,minVersion,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.wifiConfiguration,supportedWiFiFreq,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.wifiConfiguration,supportedAuthType,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,sec.wifiConfiguration,protocolType,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.dishwasherOperatingPercentage,dishwasherOperatingPercentage,1
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,remoteControlStatus,remoteControlEnabled,false
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.supportedOptions,referenceTable,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.supportedOptions,supportedCourses,"['82', '83', '84', '85', '86', '87', '88']"
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.dishwasherDelayStartTime,dishwasherDelayStartTime,00:00:00
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.energyType,energySavingSupport,False
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.energyType,drMaxDuration,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.energyType,energyType,2.0
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.energyType,energySavingLevel,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.energyType,supportedEnergySavingLevels,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.energyType,energySavingOperation,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.energyType,energySavingOperationSupport,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.softwareUpdate,targetModule,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.softwareUpdate,otnDUID,XTCGCEMPVTJPQ
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.softwareUpdate,lastUpdatedDate,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.softwareUpdate,availableModules,[]
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.softwareUpdate,newVersionAvailable,False
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.softwareUpdate,operatingState,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,samsungce.softwareUpdate,progress,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.waterFilter,waterFilterUsageStep,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.waterFilter,waterFilterResetType,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.waterFilter,waterFilterCapacity,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.waterFilter,waterFilterLastResetDate,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.waterFilter,waterFilterUsage,
+6c645f61-0b82-235f-e476-8a6afc0e73dc,[dishwasher] Samsung,main,custom.waterFilter,waterFilterStatus,
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,colorControl,saturation,100
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,colorControl,color,1
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,colorControl,hue,39.934640522222224
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,healthCheck,checkInterval,60
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,healthCheck,healthStatus,
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,healthCheck,DeviceWatch-Enroll,
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,healthCheck,DeviceWatch-DeviceStatus,offline
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,switchLevel,level,35
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,switch,switch,on
+571f0327-6507-4674-b9cf-fe68f7d9522d,meross-Light-Strip,main,colorTemperature,colorTemperature,2300
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,colorControl,saturation,100
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,colorControl,color,1
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,colorControl,hue,39.934640522222224
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,healthCheck,checkInterval,60
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,healthCheck,healthStatus,
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,healthCheck,DeviceWatch-Enroll,
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,healthCheck,DeviceWatch-DeviceStatus,online
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,switchLevel,level,35
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,switch,switch,on
+c4b4a179-6f75-48ed-a6b3-95080be6afc6,meross-Light-Strip,main,colorTemperature,colorTemperature,2300
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.foodDefrost,supportedOptions,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.foodDefrost,foodType,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.foodDefrost,weight,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.foodDefrost,operationTime,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.foodDefrost,remainingTime,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.fridgePantryInfo,name,FLEX_CRISPER
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,custom.disabledCapabilities,disabledCapabilities,"['samsungce.meatAging', 'samsungce.foodDefrost']"
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.meatAging,zoneInfo,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.meatAging,supportedMeatTypes,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.meatAging,supportedAgingMethods,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.meatAging,status,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.fridgePantryMode,mode,fridge
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),pantry-01,samsungce.fridgePantryMode,supportedModes,"['fishAndMeat', 'fridge']"
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),icemaker,custom.disabledCapabilities,disabledCapabilities,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),icemaker,switch,switch,on
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),scale-10,samsungce.connectionState,connectionState,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),scale-10,custom.disabledCapabilities,disabledCapabilities,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),scale-10,samsungce.weightMeasurement,weight,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),scale-10,samsungce.scaleSettings,enabled,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),scale-11,custom.disabledCapabilities,disabledCapabilities,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),scale-11,samsungce.weightMeasurement,weight,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cooler,contactSensor,contact,closed
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cooler,custom.disabledCapabilities,disabledCapabilities,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cooler,temperatureMeasurement,temperature,7
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cooler,custom.thermostatSetpointControl,minimumSetpoint,1
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cooler,custom.thermostatSetpointControl,maximumSetpoint,7
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cooler,thermostatCoolingSetpoint,coolingSetpoint,7
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),freezer,contactSensor,contact,closed
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),freezer,custom.disabledCapabilities,disabledCapabilities,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),freezer,temperatureMeasurement,temperature,-19
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),freezer,custom.thermostatSetpointControl,minimumSetpoint,-23
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),freezer,custom.thermostatSetpointControl,maximumSetpoint,-15
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),freezer,thermostatCoolingSetpoint,coolingSetpoint,-19
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.disabledComponents,disabledComponents,"['scale-10', 'scale-11']"
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,demandResponseLoadControl,drlcStatus,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,contactSensor,contact,closed
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,powerConsumptionReport,powerConsumption,"{'energy': 5167196, 'deltaEnergy': 0, 'power': 479, 'powerEnergy': 2.8127944584025277, 'persistedEnergy': 0, 'energySaved': 0, 'start': '2023-10-03T15:32:38Z', 'end': '2023-10-03T15:32:59Z'}"
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.viewInside,contents,"[{'fileId': '54eef6eb-ed86-47cb-a4c0-7c73a905923f', 'mimeType': 'image/jpeg', 'expiredTime': '2023-07-27T20:32:10Z'}, {'fileId': '76b800dc-ffa1-1608-27d1-ca1f9c12e77f', 'mimeType': 'image/jpeg', 'expiredTime': '2023-07-27T20:32:10Z'}, {'fileId': '476aeebb-54ae-fe85-b29a-3ed58a3f59ba', 'mimeType': 'image/jpeg', 'expiredTime': '2023-07-27T20:32:09Z'}]"
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.viewInside,lastUpdatedTime,2023-10-03T14:36:09Z
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.runestoneHomeContext,supportedContexts,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,execute,data,"{'payload': {'rt': ['x.com.samsung.da.rm.micomdata'], 'if': ['oic.if.a'], 'x.com.samsung.rm.micomdata': 'D0C0042B000000000000FE15051F5AA54400000000000000000000000000000000000000000000000001F04A00CEE0', 'x.com.samsung.rm.micomdataLength': 94}}"
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.deviceIdentification,micomAssayCode,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.deviceIdentification,modelName,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.deviceIdentification,serialNumber,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.deviceIdentification,serialNumberExtra,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.deviceIdentification,modelClassificationCode,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.deviceIdentification,description,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.deviceIdentification,binaryId,21K_REF_LCD_FHUB6.0
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.wifiConfiguration,autoReconnection,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.wifiConfiguration,minVersion,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.wifiConfiguration,supportedWiFiFreq,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.wifiConfiguration,supportedAuthType,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.wifiConfiguration,protocolType,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.fridgeMode,fridgeModeValue,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.fridgeMode,fridgeMode,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,st,2023-07-06T17:43:19Z
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mndt,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mnfv,20210206.203246
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mnhw,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,di,51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mnsl,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,dmv,1.2.1
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,n,[refrigerator] Samsung (LCD)
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mnmo,21K_REF_LCD_FHUB6.0|00137541|0000083c031524290103050000000000
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,vid,DA-REF-NORMAL-01001
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mnmn,Samsung Electronics
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mnml,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mnpv,6.0
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,mnos,Tizen
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,pi,51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,ocf,icv,core.1.1.0
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,refrigeration,defrost,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,refrigeration,rapidCooling,off
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,refrigeration,rapidFreezing,off
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.powerCool,activated,False
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.energyType,energySavingSupport,False
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.energyType,drMaxDuration,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.energyType,energyType,2.0
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.energyType,energySavingLevel,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.energyType,supportedEnergySavingLevels,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.energyType,energySavingOperation,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.energyType,energySavingOperationSupport,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.disabledCapabilities,disabledCapabilities,"['custom.waterFilter', 'custom.deviceReportStateConfiguration', 'samsungce.runestoneHomeContext', 'sec.wifiConfiguration', 'demandResponseLoadControl', 'sec.diagnosticsInformation']"
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.softwareUpdate,targetModule,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.softwareUpdate,otnDUID,P7CNQWBWI6HB4
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.softwareUpdate,lastUpdatedDate,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.softwareUpdate,availableModules,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.softwareUpdate,newVersionAvailable,False
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.softwareUpdate,operatingState,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.softwareUpdate,progress,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.driverVersion,versionNumber,23020101
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,samsungce.powerFreeze,activated,False
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,logType,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,endpoint,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,minVersion,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,signinPermission,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,setupId,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,protocolType,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,tsId,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,mnId,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,sec.diagnosticsInformation,dumpType,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,temperatureMeasurement,temperature,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.deviceReportStateConfiguration,reportStateRealtimePeriod,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.deviceReportStateConfiguration,reportStateRealtime,{'state': 'disabled'}
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.deviceReportStateConfiguration,reportStatePeriod,enabled
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.waterFilter,waterFilterUsageStep,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.waterFilter,waterFilterResetType,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.waterFilter,waterFilterCapacity,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.waterFilter,waterFilterLastResetDate,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.waterFilter,waterFilterUsage,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,custom.waterFilter,waterFilterStatus,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),main,thermostatCoolingSetpoint,coolingSetpoint,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cvroom,custom.fridgeMode,fridgeModeValue,
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cvroom,custom.fridgeMode,fridgeMode,CV_TTYPE_RF9000A_FREEZE
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cvroom,contactSensor,contact,closed
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),cvroom,custom.disabledCapabilities,disabledCapabilities,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),icemaker-02,custom.disabledCapabilities,disabledCapabilities,[]
+51f02f33-4b43-11bf-2a6d-e7b5cf5be0ee,[refrigerator] Samsung (LCD),icemaker-02,switch,switch,on
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,mediaPlayback,supportedPlaybackCommands,"['play', 'pause', 'stop', 'fastForward', 'rewind']"
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,mediaPlayback,playbackStatus,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,samsungvd.supportsPowerOnByOcf,supportsPowerOnByOcf,true
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,mediaInputSource,supportedInputSources,['digitalTv']
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,mediaInputSource,inputSource,digitalTv
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,switch,switch,on
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,st,2023-06-13T05:56:08Z
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mndt,2018-01-01
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mnfv,T-KTM2AKUC-1334.0
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mnhw,0-0
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,di,8e20883f-c444-4edf-86bf-64e74c1d70e2
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mnsl,http://www.samsung.com/sec/tv/overview/
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,dmv,"res.1.1.0,sh.1.1.0"
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,n,[TV] Samsung 8 Series (82)
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mnmo,UN82NU8000
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,vid,VD-STV_2018_K
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mnmn,Samsung Electronics
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mnml,http://www.samsung.com
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mnpv,Tizen 4.0
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,mnos,4.1.10
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,pi,8e20883f-c444-4edf-86bf-64e74c1d70e2
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,ocf,icv,core.1.1.0
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,custom.disabledCapabilities,disabledCapabilities,"['samsungvd.ambient', 'samsungvd.ambient18', 'samsungvd.ambientContent', 'sec.diagnosticsInformation']"
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,logType,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,endpoint,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,minVersion,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,signinPermission,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,setupId,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,protocolType,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,tsId,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,mnId,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,sec.diagnosticsInformation,dumpType,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,samsungvd.firmwareVersion,firmwareVersion,2.4.0
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,audioVolume,volume,0
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,samsungvd.mediaInputSource,supportedInputSourcesMap,"[{'id': 'dtv', 'name': 'TV'}]"
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,samsungvd.mediaInputSource,inputSource,dtv
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,custom.error,error,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,execute,data,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,tvChannel,tvChannel,
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,tvChannel,tvChannelName,9Ur5IzDKqV.TizenYouTube
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,custom.picturemode,pictureMode,Standard
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,custom.picturemode,supportedPictureModes,"['Dynamic', 'Standard', 'Natural', 'Movie']"
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,custom.picturemode,supportedPictureModesMap,"[{'id': 'modeDynamic', 'name': 'Dynamic'}, {'id': 'modeStandard', 'name': 'Standard'}, {'id': 'modeNatural', 'name': 'Natural'}, {'id': 'modeMovie', 'name': 'Movie'}]"
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,samsungvd.ambientContent,supportedAmbientApps,[]
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,custom.soundmode,supportedSoundModesMap,"[{'id': 'modeStandard', 'name': 'Standard'}, {'id': 'modeSmart', 'name': 'Optimized'}, {'id': 'modeAmplify', 'name': 'Amplify'}]"
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,custom.soundmode,soundMode,Standard
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,custom.soundmode,supportedSoundModes,"['Standard', 'Optimized', 'Amplify']"
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,audioMute,mute,muted
+8e20883f-c444-4edf-86bf-64e74c1d70e2,[TV] Samsung 8 Series (82),main,mediaTrackControl,supportedTrackControlCommands,

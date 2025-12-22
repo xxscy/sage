@@ -1,0 +1,49 @@
+{
+  "test_name": "start_dishwasher",
+  "user_command": "Abhisek : Start the dishwasher",
+  "types": [
+    "simple"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "There is no information pertaining to dishwasher settings in the user preferences or command history."
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: There is no information pertaining to dishwasher settings in the user preferences or command history.\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: User wants to start the dishwasher, but no specific device information is available.\n- Content Verification: no verifiable match\n- Refined Command: \"UNKNOWN_DEVICE : Start the dishwasher\"\n- Confidence: Low\n- Reasoning: \n  1. The command \"Abhisek : Start the dishwasher\" indicates a desire to control a dishwasher.\n  2. The device context shows that there are no candidates for the dishwasher, meaning the system cannot identify a specific device to control.\n  3. There are no user preferences or command history related to the dishwasher, which further complicates identifying the correct device.\n  4. Since there is no information to safely infer the device ID, it is set to UNKNOWN_DEVICE.\n  5. The command is still issued to start the dishwasher, but due to the lack of device identification, the confidence in executing this command is low."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The command indicates a desire to control a dishwasher, but there is no specific device information available. Step 2 - The system cannot identify a specific device to control, leading to a classification of the device as UNKNOWN_DEVICE. Step 3 - There are no user preferences or command history related to the dishwasher, which complicates device identification. Step 4 - The command is issued with low confidence due to the lack of device identification, indicating that clarification is necessary to ensure the correct device is controlled. Final Verdict: Need clarification.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command cannot be executed confidently due to the lack of specific device identification, necessitating human interaction for clarification.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what devices the user has to determine if there is a dishwasher available to start.",
+      "action": "device_lookup",
+      "query": "Look for the dishwasher device in Abhisek's smart home."
+    },
+    {
+      "thought": "I need to check the user's preferences to understand how they want the dishwasher to operate.",
+      "action": "preference_lookup",
+      "query": "dishwasher settings for Abhisek"
+    },
+    {
+      "thought": "I need to check if the dishwasher is available and ready to start.",
+      "action": "device_lookup",
+      "query": "Check the status of the dishwasher and if it can be started."
+    },
+    {
+      "thought": "I need to check if the dishwasher is available and ready to start.",
+      "action": "device_lookup",
+      "query": "Check the status of the dishwasher to see if it can be started."
+    }
+  ],
+  "is_correct": false
+}

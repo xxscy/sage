@@ -42,7 +42,7 @@ class SAGECoordinatorConfig(CoordinatorConfig):
     enable_memory_updating: bool = False
 
     # Bool to activate human interaction
-    enable_human_interaction: bool = False
+    enable_human_interaction: bool = True
 
     # Bool to activate google tool
     enable_google: bool = False

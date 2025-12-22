@@ -1,0 +1,43 @@
+{
+  "test_name": "how_many_lights",
+  "user_command": "Abhisek : How many lights do I have?",
+  "types": [
+    "simple",
+    "test_set"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": null,
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: None\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: User is inquiring about the number of lights they have.\n- Content Verification: no verifiable match\n- Refined Command: UNKNOWN_PARAMETER\n- Confidence: Low\n- Reasoning: \n  1. The command \"How many lights do I have?\" suggests a request for information about the user's lighting devices.\n  2. The device context indicates that there are no candidates available, meaning there are no identified devices to respond to the command.\n  3. Since there are no devices listed, it is unsafe to infer the number of lights or any specific device IDs.\n  4. Therefore, the refined command cannot specify any parameters and is set to UNKNOWN_PARAMETER."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The user is asking about the number of lights they have, which indicates a request for information related to device control. Step 2 - The system has identified that there are no verifiable matches for the user's devices, meaning it cannot determine how many lights the user possesses. Step 3 - Since there are no devices listed, the system cannot safely infer the number of lights or any specific device IDs. Step 4 - Given the lack of identifiable devices and parameters, the refined command is set to UNKNOWN_PARAMETER, indicating a need for clarification.\n\nConclusion: Need to use human_interaction_tool  \nReason: The system cannot determine the number of lights due to the absence of identifiable devices, necessitating human intervention for clarification.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what devices the user has to determine how many lights are available.",
+      "action": "device_lookup",
+      "query": "What smart lights do I have?"
+    },
+    {
+      "thought": "I need to find out how many lights the user has, which falls under device information.",
+      "action": "device_lookup",
+      "query": "How many lights does Abhisek have?"
+    },
+    {
+      "thought": "I need to find out how many lights the user has, which falls under device information.",
+      "action": "device_lookup",
+      "query": "How many lights does Abhisek have?"
+    }
+  ],
+  "is_correct": false
+}

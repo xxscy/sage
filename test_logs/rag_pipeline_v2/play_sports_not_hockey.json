@@ -1,0 +1,51 @@
+{
+  "test_name": "play_sports_not_hockey",
+  "user_command": "Dmitriy: Put some sports on the TV by the credenza.",
+  "types": [
+    "device_resolution",
+    "personalization",
+    "test_set"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": {
+    "raw": "Based on your preferences, the only sport you have listed is swimming. Additionally, your command history indicates a strong dislike for hockey, as you've mentioned multiple times that \"Hockey is no fun to watch at all.\" Therefore, it can be inferred that your favorite sport to watch on TV is swimming, and you likely do not enjoy hockey."
+  },
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: Based on your preferences, the only sport you have listed is swimming. Additionally, your command history indicates a strong dislike for hockey, as you've mentioned multiple times that \"Hockey is no fun to watch at all.\" Therefore, it can be inferred that your favorite sport to watch on TV is swimming, and you likely do not enjoy hockey.\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Content Consumption\n- Identified Situation: User wants to watch a sport on TV, specifically swimming, while avoiding hockey.\n- Content Verification: no verifiable match\n- Refined Command: \"Dmitriy: Put swimming on the TV by the credenza. If swimming is not available, set to UNKNOWN_CHANNEL.\"\n- Confidence: High\n- Reasoning: \n  1. The command indicates a desire to watch sports, with a specific preference for swimming.\n  2. The user's history shows a strong dislike for hockey, which must be avoided.\n  3. There are no available devices or channels listed, leading to the conclusion that swimming may not be available.\n  4. Since there is no verifiable match for swimming in the current context, the command includes a fallback to UNKNOWN_CHANNEL if swimming is not available."
+  },
+  "decision": {
+    "raw": "Reasoning: \nStep 1 - The user has requested to watch a specific sport (swimming) on the TV, indicating a clear preference. \nStep 2 - The command also specifies avoiding hockey, which is important for content selection. \nStep 3 - There is no verifiable match for swimming in the current context, leading to uncertainty about available content. \nStep 4 - Since the content source is unverified (UNKNOWN), it necessitates clarification to confirm the availability of swimming or to determine an appropriate alternative.\n\nFinal Verdict: Need to use human_interaction_tool\nConclusion: Need to use human_interaction_tool\nReason: The content source is unverified, and clarification is required to confirm the availability of swimming or to select an alternative.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what sports Dmitriy prefers to watch on TV.",
+      "action": "preference_lookup",
+      "query": "Dmitriy: favorite sports to watch on TV"
+    },
+    {
+      "thought": "I need to find out what devices are available to control the TV.",
+      "action": "device_lookup",
+      "query": "Find available devices to control the TV for Dmitriy."
+    },
+    {
+      "thought": "I need to find out what sports content Dmitriy prefers to watch on TV.",
+      "action": "preference_lookup",
+      "query": "Dmitriy: favorite sports to watch on TV"
+    },
+    {
+      "thought": "I need to find out what sports content Dmitriy prefers to watch on TV.",
+      "action": "preference_lookup",
+      "query": "Dmitriy sports preferences"
+    }
+  ],
+  "is_correct": false
+}

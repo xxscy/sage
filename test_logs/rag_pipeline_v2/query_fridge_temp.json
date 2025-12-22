@@ -1,0 +1,42 @@
+{
+  "test_name": "query_fridge_temp",
+  "user_command": "Abhisek : What is the fridge temperature?",
+  "types": [
+    "simple"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": null,
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: None\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: User is inquiring about the temperature of the fridge.\n- Content Verification: no verifiable match\n- Refined Command: UNKNOWN_PARAMETER\n- Confidence: Low\n- Reasoning: \n  1. The command asks for the fridge temperature, but there are no devices identified in the context.\n  2. Since there are no devices available, I cannot determine which fridge to query or control.\n  3. As a result, I cannot provide a specific command and must set the parameters to UNKNOWN_PARAMETER due to the lack of device information."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The user is asking for the temperature of the fridge, indicating a need for device control. Step 2 - However, there is no specific fridge device identified in the context, leading to uncertainty about which fridge to query. Step 3 - The command cannot be processed without knowing which fridge is being referred to, resulting in the parameters being set to UNKNOWN_PARAMETER. Step 4 - Given the lack of device information and the inability to safely default parameters, clarification is required.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command lacks specific device information, making it impossible to determine which fridge's temperature to query.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to find out what devices are available in the smart home to check the fridge temperature.",
+      "action": "device_lookup",
+      "query": "fridge temperature"
+    },
+    {
+      "thought": "I need to check the device information to find out about the fridge temperature.",
+      "action": "device_lookup",
+      "query": "fridge temperature"
+    },
+    {
+      "thought": "I need to check the device information to find out if the fridge is available and its current temperature settings.",
+      "action": "device_lookup",
+      "query": "fridge temperature"
+    }
+  ],
+  "is_correct": false
+}

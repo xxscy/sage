@@ -1,0 +1,42 @@
+{
+  "test_name": "read_all_lights",
+  "user_command": "Amal : Are all the lights on?",
+  "types": [
+    "simple"
+  ],
+  "requires_human_interaction": false,
+  "device_state_init": "(omitted for brevity)",
+  "preferences": null,
+  "device_lookup": {
+    "candidates": [],
+    "notes": "(no disambiguation)"
+  },
+  "weather": null,
+  "tv": null,
+  "environment_summary": "Devices: (no devices)\nPreferences/Profile: None\nHistory: (none)\nWeather: None\nTV: (no tv results)",
+  "intent": {
+    "raw": "- Request Type: Device Control\n- Identified Situation: Inquiry about the status of lights\n- Content Verification: no verifiable match\n- Refined Command: UNKNOWN_PARAMETER\n- Confidence: Low\n- Reasoning: \n  1. The command \"Are all the lights on?\" implies a request to check the status of lighting devices.\n  2. The device context indicates that there are no candidates or devices available to respond to this command.\n  3. Since there are no devices identified, it is unsafe to infer which lights are being referred to, leading to the conclusion that the parameters are unknown.\n  4. Therefore, the refined command cannot specify any device IDs and is marked as UNKNOWN_PARAMETER."
+  },
+  "decision": {
+    "raw": "Reasoning: Step 1 - The user command is an inquiry about the status of lights, which falls under device control. Step 2 - The refined command indicates that there are no verifiable matches for the lights, meaning no specific devices can be identified. Step 3 - Since the command cannot specify which lights are being referred to, it leads to the conclusion that the parameters are unknown. Step 4 - Given that the required parameters for device control cannot be safely defaulted, clarification is necessary. Final Verdict: Need clarification.\n\nConclusion: Need to use human_interaction_tool  \nReason: The command cannot be processed due to the lack of identifiable devices, necessitating human intervention for clarification.",
+    "needs_tool": true
+  },
+  "planner_history": [
+    {
+      "thought": "I need to check which lights are available in the user's smart home setup to determine if they are on or off.",
+      "action": "device_lookup",
+      "query": "Check the status of all lights in the smart home."
+    },
+    {
+      "thought": "I need to check the status of the lights to determine if they are all on.",
+      "action": "device_lookup",
+      "query": "Are all the lights on?"
+    },
+    {
+      "thought": "I need to check the status of the lights to determine if they are all on.",
+      "action": "device_lookup",
+      "query": "Check the status of all lights in the smart home."
+    }
+  ],
+  "is_correct": false
+}
