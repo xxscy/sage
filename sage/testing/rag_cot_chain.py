@@ -1616,6 +1616,9 @@ Your task is to translate the user's raw input into a precise "Refined Command" 
 
 4. **Entity Grounding**:
    - Ground targets by location/name; when multiple similar devices exist, prefer the single available/active one to remove ambiguity.
+   - **CRITICAL: Collective Reference Recognition**: If the command uses collective references (e.g., "all", "every", "entire", "both", "all the", plural nouns like "lights" when referring to multiple devices), this indicates a group target, NOT ambiguity. Do NOT mark as AMBIGUOUS_DEVICE. The command should target all matching devices in the group.
+   - **CRITICAL: Singular Reference Constraint**: If the command uses a singular reference (pronoun "it", "this", "that", or possessive "my X" implying a single target) AND multiple candidate devices exist without a clear, unambiguous single match (e.g., VLM ambiguous, multiple active devices of same type), you MUST mark the target as **AMBIGUOUS_DEVICE** in the Refined Command. Do NOT arbitrarily select a "first instance" or "active one" when the command implies a single target but multiple candidates exist.
+   - **Context-Based Disambiguation**: Use provided context (user preferences, device state, location hints) to resolve ambiguity. If context clearly identifies a device (e.g., "same room as TV", "by the plant", user preference rules), use that context to ground the device. Only mark as AMBIGUOUS_DEVICE if context cannot resolve the ambiguity.
 
 **Preference Handling Rules (CRITICAL):**
 - **Explicit preference references**: If the user explicitly references a personal preference (e.g., "my favorite X", "my usual Y", "my preferred Z"), you MUST verify this preference is retrievable from the provided preferences/history.
@@ -1626,16 +1629,20 @@ Your task is to translate the user's raw input into a precise "Refined Command" 
 **Anti-Hallucination Guard (CRITICAL):**
 - Ground every decision **only** on the provided facts (preferences, history, device lookup, device state, guide/knowledge). If a required fact is absent or ambiguous, mark it as `UNKNOWN_PARAMETER` rather than inventing it.
 - Preference usage must be **explicitly supported** by the provided data for the same user and relevant device/context. Generic statements or weak associations do **not** authorize assuming a preference.
-- If multiple candidate targets or preferences exist without a clear single winner, treat the target/preference as **ambiguous** and ask for clarification.
-- When command uses singular references and multiple devices fit, you must treat the target as unresolved until unambiguous grounding is available.
+- If multiple candidate targets or preferences exist without a clear single winner, treat the target/preference as **ambiguous** and mark as `AMBIGUOUS_DEVICE` or `UNKNOWN_PARAMETER` in the Refined Command.
+- When command uses singular references (pronouns, "it", "this", "that", "my X") and multiple devices fit, you MUST treat the target as **AMBIGUOUS_DEVICE** and mark it in the Refined Command. Do NOT arbitrarily select one device.
+- **Subjective/Qualitative Descriptors**: If the user uses subjective or qualitative descriptors (e.g., "redonkulous", "cozy", "vibrant", "comfortable"), check if user preferences/history provide mappings for these terms. If a mapping exists (e.g., "cozy" -> dim warm light in preferences), use it. Only mark as `UNKNOWN_PARAMETER` if no such mapping exists in the provided data.
 
 **Execution Bias Guidelines (apply when not conflicting above):**
 - Align actions with the user's expressed comfort/goal; adjust intensity downward when user indicates overload, upward when user indicates insufficiency.
 - When direction is known but parameters are missing, apply conservative defaults; mark UNKNOWN when:
   - The user asked for a specific-but-unknown preference (highest priority)
   - No safe default can be inferred from context, device capabilities, or general patterns
-- If VLM/lookup or naming/location yields a high-confidence single target, use it; similar devices do not block execution.
-- When preferences/history specify an entity or mode but omit an attribute, infer the typical attribute and label it as inferred; leave unknown only when no reasonable basis exists.
+  - The user uses subjective/qualitative descriptors that cannot be objectively mapped from provided preferences/history (e.g., "redonkulous" with no preference context)
+- **Subjective Descriptor Mapping**: If user preferences/history provide mappings for subjective descriptors (e.g., "cozy" -> dim warm light, "vibrant" -> bright color), use those mappings. Only mark as UNKNOWN_PARAMETER if no such mapping exists in provided data.
+- If VLM/lookup or naming/location yields a high-confidence single target, use it; similar devices do not block execution. **However**, if VLM indicates ambiguity or multiple candidates exist for a singular reference, mark as `AMBIGUOUS_DEVICE`.
+- When preferences/history specify an entity or mode but omit an attribute, infer the typical attribute and label it as inferred; leave unknown only when no reasonable basis exists. **However**, do NOT infer from subjective descriptors or when the user explicitly requests a personal preference that is not retrievable.
+- **Context Utilization**: Actively use provided context (user preferences, device state, location hints) to resolve ambiguity. If context provides a clear rule (e.g., "same room as TV", "by the plant"), use it to ground devices without marking as AMBIGUOUS_DEVICE.
 
 **Task:**
 Generate a `Refined Command`.
@@ -1656,22 +1663,7 @@ Generate a `Refined Command`.
 - Device Lookup Results:
 {chr(10).join(device_lookup_notes) if device_lookup_notes else "(no device lookup performed)"}
 
-**Critical Context Extraction Rules:**
-- **Current state inference**: When the command references contextual state values (e.g., "this channel", "current channel", "the channel", or similar references to existing device state), you MUST extract the current value from Device Lookup Results or Device State Focus.
-  - Look for state attributes that represent the current operational value (channel numbers, current levels, active inputs, etc.) in device state information.
-  - If a device has a current operational value available in state, use that value in the Refined Command.
-  - Only mark as UNKNOWN_PARAMETER if no current state information is available in the provided device state.
-- **Contextual device references**: When the command uses contextual device references (e.g., "this device", "other device", "the device"), extract device identification from Device Lookup Results or Device State Focus.
-  - Use device names, locations, active states, or operational status to identify contextual device references.
-  - If context clearly identifies devices based on their operational state or contextual position, proceed with the identified devices.
 
-**Output Structure:**
-- **Request Type**: [Device Control / Content Consumption]
-- **Identified Situation**: [Abstract description of user context]
-- **Content Verification**: [Found verifiable match in Guide/History OR "No verifiable match found"]
-- **Refined Command**: [Explicit command. Use 'UNKNOWN_PARAMETER' if verification fails.]
-- **Confidence**: [High (Verified/Obvious) / Low (Unverified Content/Ambiguous Target)]
-- **Reasoning**: [Step-by-step deduction. Explicitly state if TV Guide was used or if a default was applied.]
 """
 
 
@@ -1729,6 +1721,21 @@ Output exactly 2 short paragraphs:
 Do not add interpretations, guesses, or recommendations."""
 
 
+def _extract_confidence_from_intent_analysis(intent_analysis: Optional[str]) -> str:
+    """从意图分析文本中提取置信度（High/Low），默认返回Low"""
+    if not intent_analysis:
+        return "Low"
+    # 查找 Confidence 字段
+    confidence_match = re.search(
+        r"Confidence[：:]\s*(High|Low)",
+        intent_analysis,
+        re.IGNORECASE,
+    )
+    if confidence_match:
+        return confidence_match.group(1).capitalize()
+    return "Low"
+
+
 def build_cot_prompt(
     test_case: TestCaseInfo,
     user_preferences: Optional[Dict[str, Any]] = None,
@@ -1767,80 +1774,98 @@ def build_cot_prompt(
     intent_analysis_text = intent_analysis if intent_analysis else "(unavailable)"
     environment_text = environment_overview if environment_overview else "(unavailable)"
     device_state_focus_text = device_state_focus if device_state_focus else "(unavailable)"
+    
+    # 提取置信度
+    confidence = _extract_confidence_from_intent_analysis(intent_analysis)
+    
+    # 根据置信度选择不同的prompt策略
+    if confidence == "High":
+        return _build_high_confidence_prompt(test_case, intent_analysis_text, device_state_focus_text)
+    else:
+        return _build_low_confidence_prompt(test_case, intent_analysis_text, device_state_focus_text)
 
-    base_prompt = f"""You are the autonomous decision module of a smart home assistant.
-Your GOAL: Complete the user's objective. Your primary directive is to execute user commands, not to add functionality or ask unnecessary questions.
 
-**Core Principle:**
-- **Execute user intent**: Your purpose is to fulfill the user's goal, not to seek clarification unless absolutely necessary.
-- **No feature additions**: Do not add functionality beyond what the user requested.
-- **Prefer action over inquiry**: When a reasonable default can be inferred from context, device capabilities, or user intent, apply it and proceed. Only ask when the command is genuinely ambiguous and no safe default exists.
+def _build_high_confidence_prompt(
+    test_case: TestCaseInfo,
+    intent_analysis_text: str,
+    device_state_focus_text: str,
+) -> str:
+    """高置信度prompt：简洁，鼓励执行"""
+    return f"""You are the decision module of a smart home assistant. Complete user objectives efficiently.
 
-**Decision Protocol (Zero-Shot Logic):**
-You must output `Do not need to use human_interaction_tool` if the `Refined Command` can be **reasonably completed** with available information, even if some parameters are inferred from context or use conservative defaults.
+**Core Principle:** Execute user commands. Prefer action over inquiry when information is sufficient.
 
-**Logic 0: Information Request Exemption** (Highest Priority):
-- **Rule**: If the command's primary intent is to **retrieve or report information** about device state, status, or current values (rather than change state), it is complete as-is.
-- **Semantic Test**: Does the command seek to know/read/check/obtain information without requiring state modification? If yes -> **Do not need**.
-- **Rationale**: Information requests don't require parameters; they query existing state.
+**Decision Rules:**
+1. **Information requests**: If command seeks to retrieve/report information -> **Do not need**.
+2. **Check markers**: If `Refined Command` contains `AMBIGUOUS_DEVICE` or `UNKNOWN_PARAMETER` -> **Need**.
+3. **Content requests**: If Content Consumption and source is verified -> **Do not need**; if unverified -> **Need**.
+4. **Device control**: If device and parameters are specified (no markers) -> **Do not need**. Apply safe defaults when direction is clear.
 
-**Logic 1: The Content Verification Gate**:
-- **Condition**: The request is classified as **Content Consumption** (watching/listening).
-- **Check**: Review the `Deep Intent Hypothesis`. Did it successfully find a specific, verified source (channel/app) in the Knowledge Base?
-- **Decision**:
-  - If `Refined Command` contains a specific, verified source -> **Do not need** (Proceed).
-  - If `Refined Command` contains "UNKNOWN" or relies on unverified assumptions -> **Need** (Ask clarification).
-  - *Rationale*: Guessing the wrong content is a failure.
-
-**Logic 2: The Enhanced Safe Default Exemption**:
-- **Condition**: The request is classified as **Device Control** and a parameter is missing or ambiguous.
-- **Decision Rules** (apply in order):
-  1. **Singular target requirement**: When the command implies a single target, proceed only if one device is unambiguously grounded. If multiple devices fit and none is uniquely grounded, you MUST ask -> **Need**.
-  2. **Relative value expressions**: If the command specifies a relative change and device state provides current values, compute from state -> **Do not need**. If state unavailable, apply reasonable absolute defaults -> **Do not need**.
-  3. **Qualitative intent descriptors**: If the command uses subjective terms expressing user comfort or intent, infer context-appropriate defaults from user intent and device capabilities -> **Do not need**.
-  4. **Temporal/conditional rule definitions**: If the command establishes a condition-action relationship, it defines a rule rather than immediate action -> **Do not need**.
-  5. **Collective references**: If the command clearly targets a group (all/every/both) and context identifies that group, proceed -> **Do not need**.
-  6. **Directional adjustments without magnitude**: If the command specifies direction but not exact value, apply conservative defaults aligned with the stated goal -> **Do not need**.
-  7. **Explicit unknown preference requests**: If user explicitly references a specific-but-unknown personal preference and it is not retrievable -> **Need**.
-  8. **Ambiguity with no safe default**: If the command remains ambiguous and no reasonable default can be inferred -> **Need**.
-
-**Execution Bias (CRITICAL - apply when not conflicting with above):**
-- **Primary directive: Complete user goals accurately**: Execute the user's command as intended, without inventing extra targets or preferences.
-- **Respect singular targeting**: If a command implies one target and multiple candidates exist, do not act until a single target is grounded; ask if needed.
-- **No target multiplication**: Do not expand a singular request into multiple actions across devices.
-- **Context-aware defaults**: Align action direction with user-stated comfort/goal; reduce intensity when user indicates overload, increase when indicating insufficiency. Infer parameters only when the target is unambiguous.
-- **Device grounding confidence**: Proceed only when a single target is clearly grounded (by name/location/state/VLM or uniqueness). If multiple candidates remain, ask.
-- **Conservative parameter inference**: When direction is known but numeric parameters are missing, apply conservative defaults based on context, device capabilities, or general patterns. Mark UNKNOWN when a required parameter (especially personal preference) is not verifiably available.
-- **Minimize interruptions, prevent wrong actions**: Prefer not to interrupt, but avoid executing incorrect or multi-target actions when the request is singular and ambiguous.
-
-**Input Data:**
-- User Command: "{test_case.user_command}"
-- Deep Intent Hypothesis:
+**Input:**
+- Command: "{test_case.user_command}"
+- Intent Analysis:
 {intent_analysis_text}
 - Device Context:
 {device_state_focus_text}
 
-**Reasoning Process:**
-1. **Check Logic 0**: Determine if this is an information request -> If yes, **Do not need** (skip to conclusion).
-2. **Use Intent Analysis Results**: The `Deep Intent Hypothesis` contains the `Refined Command` which has already resolved device ambiguity. **You MUST use the device(s) specified in the `Refined Command`** - do NOT re-analyze device ambiguity. If the `Refined Command` specifies a device, treat it as resolved.
-3. **Classify Intent**: Is this Device Control or Content Consumption?
-4. **Analyze Refinement**: Look at the `Refined Command` and `Content Verification` status from the `Deep Intent Hypothesis`. If a device is specified in `Refined Command`, it is already resolved - do not ask for device clarification.
-5. **Apply Logic**: Use Logic 1 for Content, Logic 2 for Device Control. When applying Logic 2, if the `Refined Command` already specifies a device, treat device ambiguity as resolved.
-6. **Final Verdict**: Determine if clarification is strictly required. Remember: if `Refined Command` specifies a device, device ambiguity is already resolved.
+**Process:**
+1. Check if information request -> If yes, **Do not need**.
+2. Check for `AMBIGUOUS_DEVICE` or `UNKNOWN_PARAMETER` in `Refined Command` -> If found, **Need**.
+3. Classify intent (Device Control / Content Consumption).
+4. For Content: if source verified -> **Do not need**; else -> **Need**.
+5. For Device Control: if markers absent and device/parameters specified -> **Do not need**.
 
-Format your answer exactly as:
-Reasoning: Step 1 - Check Information Request: [...] Step 2 - Use Intent Analysis Results: [State which device(s) are specified in Refined Command, confirm device ambiguity is resolved] Step 3 - Classify Intent: [...] Step 4 - Analyze Refinement: [...] Step 5 - Apply Logic: [...] Step 6 - Final Verdict: [...]
+**Output Format:**
+Reasoning: Step 1 - [...] Step 2 - [...] Step 3 - [...] Step 4 - [...] Step 5 - [...]
 
 Conclusion:
 Need / Do not need to use human_interaction_tool
 
-Reason:
-[Brief explanation focusing on information request status, verification status, or safe defaults applied]
+Reason: [Brief explanation]"""
 
-IMPORTANT: The line after `Conclusion:` MUST be exactly either `Need to use human_interaction_tool` or `Do not need to use human_interaction_tool`.
-"""
 
-    return base_prompt
+def _build_low_confidence_prompt(
+    test_case: TestCaseInfo,
+    intent_analysis_text: str,
+    device_state_focus_text: str,
+) -> str:
+    """低置信度prompt：谨慎但允许上下文消歧"""
+    return f"""You are the decision module of a smart home assistant. Exercise caution but utilize context when available.
+
+**Core Principle:** When confidence is low, prioritize accuracy. However, if context (preferences, device state, location) provides sufficient information to resolve ambiguity, proceed without asking.
+
+**Critical Checks (apply in order):**
+1. **Information requests**: If command retrieves/reports information -> **Do not need**.
+2. **Collective references**: If command uses "all", "every", "entire", "both", or plural nouns referring to groups -> **Do not need** (group target, not ambiguity).
+3. **Context-based resolution**: If `Refined Command` contains markers BUT context (user preferences, device state, location hints) clearly resolves the ambiguity -> **Do not need**.
+4. **Mandatory markers without context**: If `Refined Command` contains `AMBIGUOUS_DEVICE` or `UNKNOWN_PARAMETER` AND context cannot resolve -> **Need**.
+5. **Content verification**: If Content Consumption and source is unverified -> **Need**.
+6. **Subjective descriptors**: If subjective descriptor (e.g., "cozy", "vibrant") can be mapped from user preferences -> **Do not need**; if cannot be mapped -> **Need**.
+
+**Input:**
+- Command: "{test_case.user_command}"
+- Intent Analysis:
+{intent_analysis_text}
+- Device Context:
+{device_state_focus_text}
+
+**Process:**
+1. Check if information request -> If yes, **Do not need**.
+2. Check if collective reference ("all", "every", "entire", plural) -> If yes, **Do not need**.
+3. Check `Refined Command` for markers -> If present, evaluate if context resolves ambiguity:
+   - If user preferences/device state/location clearly identify device -> **Do not need**
+   - If context cannot resolve -> **Need**
+4. For Content: if source verified -> **Do not need**; else -> **Need**.
+5. For subjective descriptors: if mappable from preferences -> **Do not need**; else -> **Need**.
+6. Final verdict: Use context when available; ask only when truly ambiguous.
+
+**Output Format:**
+Reasoning: Step 1 - [...] Step 2 - [Check collective/context] Step 3 - [Evaluate markers with context] Step 4 - [...] Step 5 - [...] Step 6 - [...]
+
+Conclusion:
+Need / Do not need to use human_interaction_tool
+
+Reason: [Explanation of ambiguity status and context utilization]"""
 
 
 def build_chain_planner_prompt(
@@ -2770,12 +2795,8 @@ def print_evaluation_summary(summary: Dict[str, Any]):
 
 
 if __name__ == "__main__":
-    # 示例使用
-    config = RAGCOTConfig(
-        llm_config=GPTConfig(model_name="gpt-4o-mini", temperature=0.0)
-    )
-    
-    summary = run_rag_cot_evaluation(config)
-    print_evaluation_summary(summary)
+    # 使用新的模块化入口
+    from sage.testing.rag_cot.main import main
+    main()
 
 
