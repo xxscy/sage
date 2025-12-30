@@ -73,26 +73,51 @@ def parse_llm_response(response: str) -> Tuple[bool, str]:
     """
     response_lower = response.lower()
     
-    # 查找中文或英文结论部分
-    conclusion_match = re.search(
-        r'(结论[：:]\s*(需要|不需要))|(Conclusion[：:]\s*(Need|Do\s*not\s*need))',
-        response,
-        re.IGNORECASE,
-    )
-    if conclusion_match:
-        if conclusion_match.group(2):  # 中文匹配
-            needs_tool = conclusion_match.group(2) == "需要"
-        else:  # 英文匹配
-            needs_tool = conclusion_match.group(4).lower().startswith("need")
-        return needs_tool, response
-
+    # 查找中文或英文结论部分（支持加粗标记 **Conclusion:** 或 Conclusion:）
+    # 匹配模式：结论/Conclusion 后面可能有冒号或中文冒号，可能有加粗标记，然后是要/不需要或Need/Do not need
+    conclusion_patterns = [
+        # 中文格式：结论：需要/不需要（可能有加粗标记 **）
+        r'\*{0,2}结论[：:]\s*(需要|不需要)',
+        # 英文格式：**Conclusion:** Need 或 Conclusion: Need（支持加粗标记）
+        r'\*{0,2}Conclusion:\*{0,2}\s*(Need|Do\s*not\s*need)\s*',
+        # 英文格式：Conclusion: Need/Do not need（忽略大小写，可能有加粗标记）
+        r'\*{0,2}[Cc]onclusion:\*{0,2}\s*(Need|Do\s*not\s*need)\s*',
+    ]
+    
+    for pattern in conclusion_patterns:
+        conclusion_match = re.search(pattern, response, re.IGNORECASE | re.MULTILINE)
+        if conclusion_match:
+            # 提取匹配的文本
+            matched_text = conclusion_match.group(1).lower().strip()
+            # 判断是否需要工具
+            if matched_text in ["需要", "need"]:
+                return True, response
+            elif matched_text in ["不需要", "do not need", "don't need"]:
+                return False, response
+    
     # 如果没有找到明确的结论格式，尝试关键词匹配（兼容中英文）
-    if "human_interaction" in response_lower:
-        if "need" in response_lower and "do not need" not in response_lower:
-            return True, response
-        if "do not need" in response_lower or "don't need" in response_lower:
-            return False, response
-
+    # 查找 "Need" 或 "Do not need" 在结论附近
+    need_patterns = [
+        r'conclusion[：:]\s*need\b',  # Conclusion: Need
+        r'conclusion[：:]\s*do\s+not\s+need',  # Conclusion: Do not need
+    ]
+    for pattern in need_patterns:
+        match = re.search(pattern, response_lower, re.IGNORECASE)
+        if match:
+            if "do not need" in match.group(0) or "don't need" in match.group(0):
+                return False, response
+            else:
+                return True, response
+    
+    # 查找独立的 "Need" 或 "Do not need"（在结论行）
+    if re.search(r'\bneed\s+to\s+use\s+human', response_lower):
+        return True, response
+    if re.search(r'do\s+not\s+need\s+to\s+use\s+human', response_lower):
+        return False, response
+    if re.search(r"don'?t\s+need\s+to\s+use\s+human", response_lower):
+        return False, response
+    
+    # 中文关键词匹配
     if "需要" in response and "human_interaction" in response_lower:
         if "不需要" not in response[:response.find("需要")]:
             return True, response

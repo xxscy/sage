@@ -1,0 +1,40 @@
+测试运行,完整文件夹名称,测试名称,用户命令,类型,真实值,预测值
+运行1 (15:45),2025-12-26_15-45-01_334796,lower_tv_volume,Amal : Lower the volume of the TV by the light,device_resolution,FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,switch_to_other_tv,Amal: move this channel to the other TV and turn this one off,"intent_resolution, command_chaining, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,put_the_game_on_dim_the_lights,Amal: put the game on the tv by the credenza and dim the lights by the TV,"intent_resolution, personalization, command_chaining, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,is_main_tv_on,Amal : is the TV by the credenza on?,device_resolution,FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,memory_weather_test,Abhisek : I am going to visit my mom. Should I bring an umbrella?,personalization,FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,put_on_something_funny,Dmitriy : play something funny on the TV by the plant,"intent_resolution, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,match_the_lights_to_weather,Dmitriy : set the light over the dining table to match my weather preference,"intent_resolution, personalization, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,change_light_colors_conditioned_on_favourite_team,"Abhisek : Change the lights of the house to represent my favourite hockey team. Use the lights by the TV, the dining room and the fireplace.","intent_resolution, personalization, command_chaining, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,turn_off_tvs_turn_on_fireplace_light,Dmitriy : turn off all the TVs and switch on the fireplace light,"command_chaining, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,frige_door_light,abhisek : turn on the light in the dining room when the I open the fridge,persistence,FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,turn_on_all_lights,Abhisek : Turn on all the lights.,simple,FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,turn_on_bedroom_light_dishwasherstate,abhisek : turn on light by the nightstand when the dishwasher is done,"persistence, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,put_the_game_on_amal,amal : put the game on the tv by the credenza,"intent_resolution, personalization, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,put_the_game_on_dmitriy,dmitriy : put the game on the tv by the credenza,"intent_resolution, personalization, human_interaction, device_resolution",TRUE,FALSE
+运行1 (15:45),2025-12-26_15-45-01_334796,turn_it_off,Abhisek : Turn it off.,"intent_resolution, human_interaction, device_resolution",TRUE,FALSE
+运行1 (15:45),2025-12-26_15-45-01_334796,set_christmassy_lights_by_fireplace,Dmitriy : Setup a christmassy mood by the fireplace.,"intent_resolution, device_resolution",FALSE,TRUE
+运行1 (15:45),2025-12-26_15-45-01_334796,dim_fireplace_lamp,Abhisek : dim the lights by the fire place to a third of the current value,"intent_resolution, device_resolution",FALSE,TRUE
+运行2 (14:43),2025-12-26_14-43-25_547423,match_the_lights_to_weather,Dmitriy : set the light over the dining table to match my weather preference,"personalization, device_resolution, intent_resolution",FALSE,TRUE
+运行2 (14:43),2025-12-26_14-43-25_547423,turn_off_all_lights,Dmitriy : darken the entire house,"command_chaining, device_resolution, intent_resolution",FALSE,TRUE
+运行2 (14:43),2025-12-26_14-43-25_547423,dishes_dirty_set_appropriate_mode,"Amal : Dishes are too greasy, set an appropriate mode in the dishwasher.",intent_resolution,FALSE,TRUE
+运行2 (14:43),2025-12-26_14-43-25_547423,change_light_colors_conditioned_on_favourite_team,"Abhisek : Change the lights of the house to represent my favourite hockey team. Use the lights by the TV, the dining room and the fireplace.","personalization, command_chaining, device_resolution, intent_resolution",FALSE,TRUE
+运行2 (14:43),2025-12-26_14-43-25_547423,put_the_game_on_amal,amal : put the game on the tv by the credenza,"personalization, device_resolution, intent_resolution",FALSE,TRUE
+运行2 (14:43),2025-12-26_14-43-25_547423,redonkulous_living_room,Dmitriy : Make the living room look redonkulous!,"device_resolution, intent_resolution, human_interaction",TRUE,FALSE
+运行2 (14:43),2025-12-26_14-43-25_547423,turn_it_off,Abhisek : Turn it off.,"device_resolution, intent_resolution, human_interaction",TRUE,FALSE
+运行2 (14:43),2025-12-26_14-43-25_547423,lower_tv_volume,Amal : Lower the volume of the TV by the light,device_resolution,FALSE,TRUE
+运行2 (14:43),2025-12-26_14-43-25_547423,switch_to_other_tv,Amal: move this channel to the other TV and turn this one off,"command_chaining, device_resolution, intent_resolution",FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,switch_to_other_tv,Amal: move this channel to the other TV and turn this one off,"intent_resolution, device_resolution, command_chaining",FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,is_main_tv_on,Amal : is the TV by the credenza on?,device_resolution,FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,memory_weather_test,Abhisek : I am going to visit my mom. Should I bring an umbrella?,personalization,FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,setup_lights_for_dinner,Dmitriy : set up lights for dinner,"intent_resolution, device_resolution",FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,match_the_lights_to_weather,Dmitriy : set the light over the dining table to match my weather preference,"intent_resolution, device_resolution, personalization",FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,same_light_as_tv,Abhisek : Turn on the light,"device_resolution, command_chaining",FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,put_something_informative,Amal : Put something informative on the tv by the plant.,"intent_resolution, device_resolution, personalization",FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,change_light_colors_conditioned_on_favourite_team,"Abhisek : Change the lights of the house to represent my favourite hockey team. Use the lights by the TV, the dining room and the fireplace.","intent_resolution, device_resolution, personalization, command_chaining",FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,is_fridge_open,Amal : Is the fridge door open?,simple,FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,turn_off_tvs_turn_on_fireplace_light,Dmitriy : turn off all the TVs and switch on the fireplace light,"device_resolution, command_chaining",FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,frige_door_light,abhisek : turn on the light in the dining room when the I open the fridge,persistence,FALSE,TRUE
+运行3 (13:44),2025-12-26_13-44-08_503325,redonkulous_living_room,Dmitriy : Make the living room look redonkulous!,"intent_resolution, device_resolution, human_interaction",TRUE,FALSE
+运行3 (13:44),2025-12-26_13-44-08_503325,turn_it_off,Abhisek : Turn it off.,"intent_resolution, device_resolution, human_interaction",TRUE,FALSE

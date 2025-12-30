@@ -111,3 +111,8 @@ for name, info in failure_patterns.items():
     print(f"  意图分析片段: {info['intent_analysis'][:200]}...")
 
 
+
+
+
+
+
