@@ -53,6 +53,7 @@ def build_intent_analysis_prompt(
 ) -> str:
     """
     构建用户深层意图分析的 prompt，供 LLM 生成结构化意图描述。
+    LLM 需要分析命令并判断是否有足够信息执行，输出结构化结果。
     """
     preferences_text = str(user_preferences) if user_preferences else "(unavailable)"
     memory_text = "\n".join(user_memory_snippets) if user_memory_snippets else "(unavailable)"
@@ -62,33 +63,33 @@ def build_intent_analysis_prompt(
     target_device_context_text = target_device_context or "(unavailable)"
     tv_guide_text = tv_guide_knowledge or "(unavailable)"
 
-    return f"""Analyze user intent and resolve ambiguities using device context and reasoning.
+    return f"""# Role
+You are an intent analysis module for a smart home assistant.
 
-**Analysis Framework:**
-1. **Intent Classification**: Device Control | Content Consumption | Information Query | Other
-2. **Device Resolution**: Use device state and context to identify specific devices
-   - Location-based: "by the TV", "in bedroom", "near credenza" → match with device locations
-   - Type-based: "the light", "TV" → use most relevant/active device of that type
-   - State-based: "turned off device", "dimmed lights" → match with current states
-   - Multiple devices: prefer most recently used or most accessible
-3. **Parameter Resolution**: Infer reasonable defaults and preferences
-4. **Content Resolution**: Match with available content (TV channels, apps, media)
+# Task
+Analyze the command and determine if execution is possible with available information.
 
-**Resolution Rules:**
-- **Device Not Found**: Not an ambiguity - assume device lookup will handle this
-- **Multiple Options**: Choose most reasonable based on context, location, recent usage
-- **Unclear Parameters**: Use safe defaults or infer from preferences
-- **Content Selection**: Choose best match from available options
+# Decision Process:
+Examine the command and available context. Prefer saying "NO" (no clarification needed) when information is sufficient or can be reasonably inferred.
 
-**Risk Levels:**
-- **Low**: Device control (lights, TV, audio, temperature), reversible actions
-- **Medium**: Content selection, multi-device operations
-- **High**: Security systems, irreversible actions, unknown devices
+**Say "NO" (no clarification needed) when:**
+- Device is identified through spatial references (location relative to objects or spaces) or explicit naming.
+- Scope is unambiguous (applies to all relevant items or a single unique target).
+- Intent can be inferred from purpose or context clues (commands describing desired state or purpose).
+- Parameters can use sensible defaults (adjustment verbs without specific values).
+- Requested information is available in the provided context.
+- Only one relevant device exists or is active.
 
-**Input:**
+**Say "YES" (clarification needed) only when ALL conditions are met for critical information:**
+- Device reference is ambiguous (pure pronoun without context) AND multiple candidate devices are active.
+- Personal preference is explicitly referenced BUT preference data is unavailable.
+- Specific content is required (definite article with category) BUT preferences or context cannot determine which.
+- Term is unclear or undefined AND no context explains its meaning.
+
+# Input
 Command: "{test_case.user_command}"
-Preferences: {preferences_text}
-History: {memory_text}
+User Preferences: {preferences_text}
+Interaction History: {memory_text}
 TV Guide: {tv_guide_text}
 Device State: {device_state_focus_text}
 Device Context: {target_device_context_text}
@@ -96,10 +97,12 @@ Environment: {environment_text}
 Context Summary: {context_summary_text}
 Device Lookup: {chr(10).join(device_lookup_notes) if device_lookup_notes else "(none)"}
 
-**Output Format:**
-Refined Command: [clear, actionable command with resolved devices and parameters]
-Risk Assessment: [Low/Medium/High - potential harm if executed incorrectly]
-Confidence: [High/Low - certainty of interpretation and execution]"""
+# Output Format
+Refined Command: [Specific actionable command - only if NO clarification needed]
+Needs Clarification: [YES/NO]
+Missing Information: [If YES: what is missing; if NO: "None"]
+Confidence: [High/Low]
+Risk Assessment: [Low/Medium/High]"""
 
 
 def build_environment_overview_prompt(
@@ -171,6 +174,61 @@ def _extract_risk_assessment(intent_analysis: Optional[str]) -> str:
     return "Medium"
 
 
+def _extract_needs_clarification(intent_analysis: Optional[str]) -> bool:
+    """从 Intent Analysis 中提取是否需要澄清（由 LLM 判断）
+    
+    Returns: True if LLM determined clarification is needed
+    """
+    if not intent_analysis:
+        return False
+    
+    lower_text = intent_analysis.lower()
+    
+    # 检测 "Needs Clarification: YES"
+    if "needs clarification: yes" in lower_text or "needs clarification:** yes" in lower_text:
+        return True
+    
+    return False
+
+
+def _extract_missing_information(intent_analysis: Optional[str]) -> Optional[str]:
+    """从 Intent Analysis 中提取缺失的信息（由 LLM 判断）
+    
+    Returns: Missing information string, or None if not found
+    """
+    if not intent_analysis:
+        return None
+    
+    # 查找 Missing Information 字段
+    patterns = [
+        r"Missing Information[：:]\s*(.+?)(?:\n|$)",
+        r"Missing Information[：:]\*\*\s*(.+?)(?:\n|$)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, intent_analysis, re.IGNORECASE)
+        if match:
+            info = match.group(1).strip()
+            if info.lower() not in ["none", "n/a", ""]:
+                return info
+    return None
+
+
+def _extract_refined_command(intent_analysis: Optional[str]) -> Optional[str]:
+    """从 Intent Analysis 中提取 Refined Command"""
+    if not intent_analysis:
+        return None
+    
+    patterns = [
+        r"Refined Command[：:]\s*(.+?)(?:\n|$)",
+        r"Refined Command[：:]\*\*\s*(.+?)(?:\n|$)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, intent_analysis, re.IGNORECASE)
+        if match:
+            return match.group(1).strip().strip('"').strip("'")
+    return None
+
+
 def build_cot_prompt(
     test_case: TestCaseInfo,
     user_preferences: Optional[Dict[str, Any]] = None,
@@ -185,96 +243,89 @@ def build_cot_prompt(
     device_state_focus: Optional[str] = None,
     target_device_context: Optional[str] = None,
     intent_reasoning_enabled: bool = True,
+    effective_user_name: Optional[str] = None,
 ) -> str:
     """
     构建 COT（Chain of Thought）推理提示词。
-
-    LLM 的工作流程应当是：
-    1. 先根据给定的用户指令，理解需要检索哪些用户偏好和设备信息；
-    2. 然后在已经提供好的「用户偏好、历史交互片段、当前设备状态」上下文基础上，
-       判断是否需要调用 human_interaction_tool 进一步向用户澄清。
-
-    Args:
-        test_case: 当前要判断的测试用例
-        user_preferences: 针对当前 user_name 检索到的用户偏好摘要
-        user_memory_snippets: 针对当前 user_name 和命令检索到的历史交互片段
-        examples: 示例测试用例（已弃用，使用零样本模式）
-        intent_reasoning_enabled: 是否启用深度推理（受意图分析开关控制）
-
-    Returns:
-        构建好的 prompt 字符串（英文，用于发送给 LLM）
+    所有判断都由 LLM 完成，代码只负责传递信息。
     """
-    preferences_text = str(user_preferences) if user_preferences else "(no user preferences)"
-    memory_text = "\n".join(user_memory_snippets) if user_memory_snippets else "(no history)"
-    intent_analysis_text = intent_analysis if intent_analysis else "(unavailable)"
-    environment_text = environment_overview if environment_overview else "(unavailable)"
-    device_state_focus_text = device_state_focus if device_state_focus else "(unavailable)"
+    # 从 Intent Analysis 提取 LLM 的判断结果
+    needs_clarification = _extract_needs_clarification(intent_analysis)
+    missing_info = _extract_missing_information(intent_analysis)
+    refined_command = _extract_refined_command(intent_analysis)
     
-    # 提取置信度
-    confidence = _extract_confidence_from_intent_analysis(intent_analysis)
+    # 构建上下文摘要（只传递信息，不做判断）
+    context_parts = []
     
-    # 根据置信度选择不同的prompt策略
-    if confidence == "High":
-        return _build_high_confidence_prompt(test_case, intent_analysis_text, device_state_focus_text)
+    # 1. Intent Analysis 结果（完整显示，让最终决策 LLM 自己判断）
+    if intent_analysis:
+        context_parts.append(f"**Intent Analysis Result:**\n{intent_analysis}")
+    
+    # 2. 用户信息
+    context_parts.append(f"**User:** {effective_user_name or 'unknown'}")
+    
+    # 3. 用户偏好（原样传递，让 LLM 自己判断是否足够）
+    if user_preferences:
+        context_parts.append(f"**User Preferences:** {user_preferences}")
     else:
-        return _build_low_confidence_prompt(test_case, intent_analysis_text, device_state_focus_text)
+        context_parts.append("**User Preferences:** (not available)")
+    
+    # 4. 设备和环境信息（原样传递）
+    if environment_overview:
+        context_parts.append(f"**Environment:** {environment_overview}")
+    if device_state_focus:
+        context_parts.append(f"**Device State:** {device_state_focus}")
+    if target_device_context:
+        context_parts.append(f"**Device Context:** {target_device_context}")
+    if device_lookup_notes:
+        context_parts.append(f"**Available Devices:**\n{chr(10).join(device_lookup_notes)}")
+    if context_summary:
+        context_parts.append(f"**Context Summary:** {context_summary}")
+    
+    context_text = "\n\n".join(context_parts) if context_parts else "(unavailable)"
+    
+    return _build_voi_decision_prompt(test_case, context_text)
 
 
-def _build_high_confidence_prompt(
+def _build_voi_decision_prompt(
     test_case: TestCaseInfo,
-    intent_analysis_text: str,
-    device_state_focus_text: str,
+    context_text: str,
 ) -> str:
-    """高置信度："""
-    return f"""Decide if human_interaction_tool is needed. Focus on user clarification needs, not task execution feasibility.You only need to focus on the user's explicit instructions and not associate them with other requirements
+    """最终决策 prompt - 完全由 LLM 自主判断，无硬编码规则"""
+    
+    return f"""# Role
+You are SAGE, a smart home assistant.
 
-**Rules:**
-1. Information requests = Do not need
-2. Content completely unavailable = Need
-3. Safety/security critical decisions = Need
-4. Pronoun ambiguity ("it/this/that") with multiple candidate devices (esp. same-type lights/TVs all on) = Need
-5. All other device/parameter ambiguities = Do not need (assume resolution possible)
-6. All other cases = Do not need
+# Task
+Decide: **ACT** (execute directly) or **ASK** (clarify first).
 
+# Decision Process:
+Make a decision based on the clarity of the command and available context. Prefer ACT when information is sufficient or can be reasonably inferred.
 
-**Input:**
-Command: "{test_case.user_command}"
-Intent Analysis: {intent_analysis_text}
-Device Context: {device_state_focus_text}
+**Important:** If Intent Analysis indicates "Needs Clarification: NO", you should ACT unless there is a clear reason not to.
 
-**Output:**
-Reasoning: [Focus on clarification needs only]
-Conclusion: Need / Do not need
-Reason: [Only if user clarification is truly needed]"""
+**ACT (execute directly) when:**
+- Device or target is identified through spatial references (location relative to objects or spaces) or explicit naming.
+- Scope is unambiguous (applies to all relevant items or a single unique target).
+- Intent can be inferred from purpose or context clues (commands describing desired state or purpose).
+- Parameters can use sensible defaults (adjustment verbs without specific values).
+- Necessary information is available in the provided context (queries about state, value, or condition with available data).
 
+**ASK (clarify first) only when ALL conditions are met for critical information:**
+- Device reference is ambiguous (pure pronoun without context) AND multiple candidate devices are active.
+- Personal preference is explicitly referenced BUT preference data is unavailable.
+- Specific content is required (definite article with category) BUT preferences or context cannot determine which.
+- Term is unclear or undefined AND no context explains its meaning.
 
-def _build_low_confidence_prompt(
-    test_case: TestCaseInfo,
-    intent_analysis_text: str,
-    device_state_focus_text: str,
-) -> str:
-    """低置信度："""
-    return f"""Decide if human_interaction_tool is needed. Only care about user clarification requirements.You only need to focus on the user's explicit instructions and not associate them with other requirements.
+# Context
+**Original Request:** "{test_case.user_command}"
 
-**Rules:**
-1. Information requests = Do not need
-2. Content completely unavailable with no alternatives = Need
-3. Safety/security critical decisions requiring user judgment = Need
-4. Subjective preferences with no user history/context = Need
-5. Pronoun ambiguity ("it/this/that") with multiple candidate devices (esp. same-type lights/TVs all on) = Need
-6. When a user's instruction explicitly requires specifying a certain device, but this device is not found = Need
-7. All device/parameter resolution issues = Do not need (assume can be handled)
-8. All other cases = Do not need
+{context_text}
 
-**Input:**
-Command: "{test_case.user_command}"
-Intent Analysis: {intent_analysis_text}
-Device Context: {device_state_focus_text}
-
-**Output:**
-Reasoning: [Focus only on clarification needs]
-Conclusion: Need / Do not need
-Reason: [Only if user input is essential]"""
+# Output
+Thought: [Analyze the command and context. If Intent Analysis says "Needs Clarification: NO", you should ACT unless there is a clear reason not to. Prefer ACT when information is sufficient or can be reasonably inferred.]
+Decision: [ACT / ASK]
+Question: [If ASK, your clarifying question; if ACT, leave empty]"""
 
 
 def build_chain_planner_prompt(

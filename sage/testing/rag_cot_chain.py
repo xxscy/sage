@@ -143,7 +143,7 @@ class DeviceLookupTool:
 
     def run(self, query: str) -> str:
         if not query:
-            return json.dumps({"devices": [], "error": "Query is empty"}, ensure_ascii=False, indent=2)
+            return "DeviceLookupTool: query is empty."
         planner_result = self._planner_lookup(query)
         if planner_result is not None:
             return planner_result
@@ -171,7 +171,7 @@ class DeviceLookupTool:
             matches.append((score, device_id, metadata))
 
         if not matches:
-            return json.dumps({"devices": [], "error": f"No devices found matching query: {query}"}, ensure_ascii=False, indent=2)
+            return f"DeviceLookupTool: 未找到与 \"{query}\" 相关的设备。"
 
         matches.sort(key=lambda item: item[0], reverse=True)
         limited = matches[: self.max_results]
@@ -202,25 +202,20 @@ class DeviceLookupTool:
                         ]
                 except Exception as exc:
                     CONSOLE.log(f"[yellow]VLM 消歧在 device_lookup 中失败，已忽略: {exc}")
-        # 只输出设备信息的 JSON 格式，不包含推理内容
-        devices = []
+        lines = []
         for score, device_id, metadata in limited:
-            device_info = {
-                "device_id": device_id,
-                "name": metadata["name"],
-                "capabilities": metadata["capabilities"],
-                "components": metadata["components"],
-                "state": metadata["state_summary"],
-                "score": round(score, 2),
-            }
-            devices.append(device_info)
-        
-        result = {"devices": devices}
+            lines.append(
+                self._format_device_line(
+                    device_id=device_id,
+                    metadata=metadata,
+                    score=score,
+                )
+            )
+
         extra = len(matches) - len(limited)
         if extra > 0:
-            result["truncated_count"] = extra
-        
-        return json.dumps(result, ensure_ascii=False, indent=2)
+            lines.append(f"(另有 {extra} 个候选被截断)")
+        return "\n".join(lines)
 
     def _build_device_metadata(self, device_id: str) -> Dict[str, Any]:
         device_name = self.doc_manager.device_names.get(device_id, "Unknown device")
@@ -246,70 +241,24 @@ class DeviceLookupTool:
         }
 
     def _summarize_device_state(self, device_id: str, component_limit: int = 2) -> str:
-        """精简设备状态摘要，只显示关键操作状态值"""
         device_state = self.device_state.get(device_id)
         if not device_state:
-            return "(no state)"
+            return "(no fake_requests snapshot for this device)"
 
-        # 提取关键状态值（类似 _build_device_state_focus 的逻辑）
-        key_values = []
-        for component, cap_dict in list(device_state.items())[:component_limit]:
-            comp_values = []
-            
-            # 只提取关键能力的状态值
-            switch_val = self._extract_capability_value(cap_dict, "switch", "switch")
-            level_val = self._extract_capability_value(cap_dict, "switchLevel", "level")
-            volume_val = self._extract_capability_value(cap_dict, "audioVolume", "volume")
-            mute_val = self._extract_capability_value(cap_dict, "audioMute", "mute")
-            channel_val = self._extract_capability_value(cap_dict, "tvChannel", "tvChannel")
-            temp_val = self._extract_capability_value(cap_dict, "temperatureMeasurement", "temperature")
-            
-            if switch_val is not None:
-                comp_values.append(f"switch={switch_val}")
-            if level_val is not None:
-                comp_values.append(f"level={level_val}")
-            if volume_val is not None:
-                comp_values.append(f"volume={volume_val}")
-            if mute_val is not None:
-                comp_values.append(f"mute={mute_val}")
-            if channel_val is not None:
-                comp_values.append(f"channel={channel_val}")
-            if temp_val is not None:
-                comp_values.append(f"temp={temp_val}")
-            
-            # 如果没有关键值，显示第一个能力的前2个属性作为后备
-            if not comp_values:
-                for cap_idx, (capability, attributes) in enumerate(list(cap_dict.items())[:1]):
-                    attr_summary = self._format_attribute_values(attributes, limit=2)
-                    if attr_summary and attr_summary != "(empty capability)":
-                        comp_values.append(f"{capability}: {attr_summary}")
-                        break
-            
-            if comp_values:
-                key_values.append(f"{component}({', '.join(comp_values)})")
-        
-        if not key_values:
-            return "(no actionable state)"
-        
-        result = " | ".join(key_values)
-        # 限制总长度，避免过长
-        if len(result) > 200:
-            result = result[:197] + "..."
-        return result
-    
-    def _extract_capability_value(self, cap_dict: Dict[str, Any], capability: str, attribute: str) -> Optional[Any]:
-        """从能力字典中提取指定属性的值"""
-        if capability not in cap_dict:
-            return None
-        attrs = cap_dict[capability]
-        if not isinstance(attrs, dict):
-            return None
-        if attribute not in attrs:
-            return None
-        attr_val = attrs[attribute]
-        if isinstance(attr_val, dict) and "value" in attr_val:
-            return attr_val["value"]
-        return attr_val
+        component_chunks = []
+        for comp_idx, (component, cap_dict) in enumerate(device_state.items()):
+            if comp_idx >= component_limit:
+                component_chunks.append("...")
+                break
+            cap_chunks = []
+            for cap_idx, (capability, attributes) in enumerate(cap_dict.items()):
+                if cap_idx >= 3:
+                    cap_chunks.append("...")
+                    break
+                attr_summary = self._format_attribute_values(attributes)
+                cap_chunks.append(f"{capability}: {attr_summary}")
+            component_chunks.append(f"{component} -> {' | '.join(cap_chunks)}")
+        return " || ".join(component_chunks) if component_chunks else "(empty component list)"
 
     def _format_attribute_values(self, attributes: Any, limit: int = 2) -> str:
         if isinstance(attributes, dict):
@@ -342,23 +291,14 @@ class DeviceLookupTool:
         metadata: Dict[str, Any],
         score: float,
     ) -> str:
-        # 精简能力列表，只显示前3个关键能力
-        key_capabilities = ["switch", "switchLevel", "tvChannel", "audioVolume", "audioMute", 
-                           "colorControl", "temperatureMeasurement"]
-        capabilities = metadata["capabilities"]
-        # 优先显示关键能力
-        priority_caps = [c for c in capabilities if any(kc in c.lower() for kc in key_capabilities)][:3]
-        other_caps = [c for c in capabilities if c not in priority_caps][:2]
-        shown_caps = priority_caps + other_caps
-        capability_preview = ", ".join(shown_caps) if shown_caps else "(no capability data)"
-        if len(capabilities) > len(shown_caps):
-            capability_preview += f" (+{len(capabilities) - len(shown_caps)} more)"
-        
+        capability_preview = ", ".join(metadata["capabilities"][:5]) or "(no capability data)"
+        if len(metadata["capabilities"]) > 5:
+            capability_preview += ", ..."
+        component_preview = ", ".join(metadata["components"][:3]) or "(components unavailable)"
         state_summary = metadata["state_summary"]
-        # 精简格式：只显示关键信息
         return (
-            f"[{score:.2f}] {metadata['name']} | "
-            f"Caps: {capability_preview} | "
+            f"[匹配度 {score:.2f}] {metadata['name']} ({device_id}) | "
+            f"Capabilities: {capability_preview} | Components: {component_preview} | "
             f"State: {state_summary}"
         )
 
@@ -386,20 +326,23 @@ class DeviceLookupTool:
         if not device_ids:
             return None
 
-        # 只输出设备信息的 JSON 格式，不包含推理内容
-        devices = []
+        lines = []
         for device_id in device_ids[: self.max_results]:
             metadata = self._build_device_metadata(device_id)
-            device_info = {
-                "device_id": device_id,
-                "name": metadata["name"],
-                "capabilities": metadata["capabilities"],
-                "components": metadata["components"],
-                "state": metadata["state_summary"],
-            }
-            devices.append(device_info)
-        
-        return json.dumps({"devices": devices}, ensure_ascii=False, indent=2)
+            lines.append(
+                self._format_device_line(
+                    device_id=device_id,
+                    metadata=metadata,
+                    score=5.0,  # Planner 已经筛选，无需再算分
+                )
+            )
+        plan_details = self._extract_section(plan_output, "Plan")
+        explanation = self._extract_section(plan_output, "Explanation")
+        if plan_details:
+            lines.append(f"Planner plan: {plan_details}")
+        if explanation:
+            lines.append(f"Planner notes: {explanation}")
+        return "\n".join(lines)
 
     def _extract_device_ids_from_plan(self, plan_output: str) -> List[str]:
         device_section = self._extract_section(plan_output, "Device Ids")
@@ -1065,50 +1008,50 @@ def _vlm_pick_device(
 
     - 仅在 VlmDeviceDetector 可用且 image_folder 存在时启用。
     - 若仅 0/1 个设备或图片缺失，返回 (None, None)。
-    
-    参考 device_disambiguation.py 的设计：
-    1. 先创建 VlmDeviceDetector 实例
-    2. 使用 get_images() 获取所有可用的图片文件名（作为 real_devices）
-    3. 使用 select_devices() 方法匹配 device_ids 和图片文件名
-    4. 只传入能够匹配到的设备 ID 给 identify_device_with_scores
     """
     if VlmDeviceDetector is None:
         return None, "[VLM error: detector unavailable]"
     if not image_folder or not image_folder.exists():
         return None, "[VLM error: image folder missing]"
     
-    if len(device_ids) <= 1:
-        return None, f"[VLM none: insufficient candidates (found {len(device_ids)} device(s))]"
+    # 收集图片文件夹中所有可用的设备ID（支持多种图片格式）
+    # 参考 device_disambiguation.py 的 get_images 方法，使用文件名（不含扩展名）作为 device_id
+    available_image_ids = _get_available_image_device_ids(image_folder)
+    
+    # 仅保留有对应图片的候选设备ID
+    # 使用模糊匹配，因为 device_disambiguation.py 的 select_devices 会进行模糊匹配
+    candidate_ids = []
+    for dev_id in device_ids:
+        # 首先尝试精确匹配
+        if dev_id in available_image_ids:
+            candidate_ids.append(dev_id)
+        else:
+            # 尝试模糊匹配（参考 device_disambiguation.py 的 select_devices 逻辑）
+            # 检查是否有相似的文件名（基于字符匹配）
+            for img_id in available_image_ids:
+                # 简单的字符匹配度计算
+                min_len = min(len(dev_id), len(img_id))
+                if min_len == 0:
+                    continue
+                match_count = sum(1 for c1, c2 in zip(dev_id.lower(), img_id.lower()) if c1 == c2)
+                match_ratio = match_count / max(len(dev_id), len(img_id))
+                # 阈值 0.7，与 device_disambiguation.py 保持一致
+                if match_ratio >= 0.7:
+                    candidate_ids.append(dev_id)
+                    break
+    
+    # 去重
+    candidate_ids = list(dict.fromkeys(candidate_ids))
+    
+    if len(candidate_ids) <= 1:
+        return None, f"[VLM none: no image candidates (found {len(candidate_ids)} matching images)]"
     
     try:
-        # 创建 VlmDeviceDetector 实例
         detector = VlmDeviceDetector(str(image_folder))
-        
-        # 获取所有可用的图片文件名（参考 device_disambiguation.py 的 get_images 方法）
-        image_dict = detector.get_images()
-        real_devices = list(image_dict.keys())
-        
-        if not real_devices:
-            return None, "[VLM error: no images found in folder]"
-        
-        # 使用 select_devices 方法匹配 device_ids 和图片文件名
-        # 这个方法会返回匹配到的图片文件名（real_devices 中的 ID）
-        matched_device_list = detector.select_devices(device_ids, real_devices)
-        
-        if not matched_device_list:
-            return None, f"[VLM error: none of the {len(device_ids)} device(s) matched any images. Available images: {len(real_devices)}"
-        
-        if len(matched_device_list) <= 1:
-            # 只有一个匹配，直接返回
-            winner = matched_device_list[0]
-            return winner, f"[VLM single match: {winner} for '{command}']"
-        
-        # 构建 payload，传入匹配到的设备 ID（这些是图片文件名）
         payload = {
-            "devices": matched_device_list,
+            "devices": candidate_ids,
             "disambiguation_information": command,
         }
-        
         winner = None
         ranked: List[Tuple[str, float]] = []
         if hasattr(detector, "identify_device_with_scores"):
@@ -1119,8 +1062,8 @@ def _vlm_pick_device(
             if winner and isinstance(winner, str) and winner not in ["", "None"]:
                 ranked = [(winner, 1.0)]
         
-        # 检查 winner 是否是错误消息（字符串且不在 matched_device_list 中）
-        if isinstance(winner, str) and winner not in matched_device_list:
+        # 检查 winner 是否是错误消息（字符串且不在 candidate_ids 中）
+        if isinstance(winner, str) and winner not in candidate_ids:
             # winner 是错误消息，不是有效的 device_id
             error_msg = winner
             if ranked:
@@ -1139,8 +1082,8 @@ def _vlm_pick_device(
                 top_candidates = [dev_id for dev_id, _ in ranked[:3]]
                 return None, f"VLM ambiguous: top gap {score_gap:.3f}, top score {top_score:.3f}, candidates={top_candidates}, scores={score_log}"
         
-        # 验证 winner 是否在匹配列表中
-        if winner and winner in matched_device_list:
+        # 验证 winner 是否在候选列表中
+        if winner and winner in candidate_ids:
             return winner, f"VLM disambiguation suggests device {winner} for '{command}'. scores={', '.join(f'{d}:{s:.3f}' for d, s in ranked[:5])}" if ranked else f"VLM disambiguation suggests device {winner} for '{command}'."
     except Exception as exc:
         err = f"[VLM error: {exc}]"
@@ -1616,39 +1559,16 @@ Your task is to translate the user's raw input into a precise "Refined Command" 
 
 4. **Entity Grounding**:
    - Ground targets by location/name; when multiple similar devices exist, prefer the single available/active one to remove ambiguity.
-   - **CRITICAL: Collective Reference Recognition**: If the command uses collective references (e.g., "all", "every", "entire", "both", "all the", plural nouns like "lights" when referring to multiple devices), this indicates a group target, NOT ambiguity. Do NOT mark as AMBIGUOUS_DEVICE. The command should target all matching devices in the group.
-   - **CRITICAL: Singular Reference Constraint**: If the command uses a singular reference (pronoun "it", "this", "that", or possessive "my X" implying a single target) AND multiple candidate devices exist without a clear, unambiguous single match (e.g., VLM ambiguous, multiple active devices of same type), you MUST mark the target as **AMBIGUOUS_DEVICE** in the Refined Command. Do NOT arbitrarily select a "first instance" or "active one" when the command implies a single target but multiple candidates exist.
-   - **Context-Based Disambiguation**: Use provided context (user preferences, device state, location hints) to resolve ambiguity. If context clearly identifies a device (e.g., "same room as TV", "by the plant", user preference rules), use that context to ground the device. Only mark as AMBIGUOUS_DEVICE if context cannot resolve the ambiguity.
-
-**Preference Handling Rules (CRITICAL):**
-- **Explicit preference references**: If the user explicitly references a personal preference (e.g., "my favorite X", "my usual Y", "my preferred Z"), you MUST verify this preference is retrievable from the provided preferences/history.
-  - If the preference is **found and verified** in the provided data -> Use it in the Refined Command.
-  - If the preference is **not found or not retrievable** -> Mark as `UNKNOWN_PARAMETER` in the Refined Command. **Do NOT infer or guess** the preference from unrelated context or general knowledge.
-  - **Rationale**: Personal preferences are user-specific and cannot be safely inferred; guessing wrong preferences violates user trust.
-
-**Anti-Hallucination Guard (CRITICAL):**
-- Ground every decision **only** on the provided facts (preferences, history, device lookup, device state, guide/knowledge). If a required fact is absent or ambiguous, mark it as `UNKNOWN_PARAMETER` rather than inventing it.
-- Preference usage must be **explicitly supported** by the provided data for the same user and relevant device/context. Generic statements or weak associations do **not** authorize assuming a preference.
-- If multiple candidate targets or preferences exist without a clear single winner, treat the target/preference as **ambiguous** and mark as `AMBIGUOUS_DEVICE` or `UNKNOWN_PARAMETER` in the Refined Command.
-- When command uses singular references (pronouns, "it", "this", "that", "my X") and multiple devices fit, you MUST treat the target as **AMBIGUOUS_DEVICE** and mark it in the Refined Command. Do NOT arbitrarily select one device.
-- **Subjective/Qualitative Descriptors**: If the user uses subjective or qualitative descriptors (e.g., "redonkulous", "cozy", "vibrant", "comfortable"), check if user preferences/history provide mappings for these terms. If a mapping exists (e.g., "cozy" -> dim warm light in preferences), use it. Only mark as `UNKNOWN_PARAMETER` if no such mapping exists in the provided data.
 
 **Execution Bias Guidelines (apply when not conflicting above):**
 - Align actions with the user's expressed comfort/goal; adjust intensity downward when user indicates overload, upward when user indicates insufficiency.
-- When direction is known but parameters are missing, apply conservative defaults; mark UNKNOWN when:
-  - The user asked for a specific-but-unknown preference (highest priority)
-  - No safe default can be inferred from context, device capabilities, or general patterns
-  - The user uses subjective/qualitative descriptors that cannot be objectively mapped from provided preferences/history (e.g., "redonkulous" with no preference context)
-- **Subjective Descriptor Mapping**: If user preferences/history provide mappings for subjective descriptors (e.g., "cozy" -> dim warm light, "vibrant" -> bright color), use those mappings. Only mark as UNKNOWN_PARAMETER if no such mapping exists in provided data.
-- If VLM/lookup or naming/location yields a high-confidence single target, use it; similar devices do not block execution. **However**, if VLM indicates ambiguity or multiple candidates exist for a singular reference, mark as `AMBIGUOUS_DEVICE`.
-- When preferences/history specify an entity or mode but omit an attribute, infer the typical attribute and label it as inferred; leave unknown only when no reasonable basis exists. **However**, do NOT infer from subjective descriptors or when the user explicitly requests a personal preference that is not retrievable.
-- **Context Utilization**: Actively use provided context (user preferences, device state, location hints) to resolve ambiguity. If context provides a clear rule (e.g., "same room as TV", "by the plant"), use it to ground devices without marking as AMBIGUOUS_DEVICE.
+- When direction is known but parameters are missing, apply conservative defaults; mark UNKNOWN only when the user asked for a specific-but-unknown preference.
+- If VLM/lookup or naming/location yields a high-confidence single target, use it; similar devices do not block execution.
+- When preferences/history specify an entity or mode but omit an attribute, infer the typical attribute and label it as inferred; leave unknown only when no reasonable basis exists.
 
 **Task:**
 Generate a `Refined Command`.
-- For **Device Control**: 
-  - Apply safe defaults if parameters are missing AND the user did not explicitly request a personal preference.
-  - If user explicitly requested a personal preference that is not retrievable -> Mark as `UNKNOWN_PARAMETER`.
+- For **Device Control**: Apply safe defaults if parameters are missing.
 - For **Content Consumption**: Only generate a specific command if the source is **verified**. Otherwise, flag the missing parameter.
 
 **Facts:**
@@ -1660,10 +1580,14 @@ Generate a `Refined Command`.
 - Context Summary: {context_summary_text}
 - Device Environment: {environment_text}
 - Preferences / device facts: {preferences_text}
-- Device Lookup Results:
-{chr(10).join(device_lookup_notes) if device_lookup_notes else "(no device lookup performed)"}
 
-
+**Output Structure:**
+- **Request Type**: [Device Control / Content Consumption]
+- **Identified Situation**: [Abstract description of user context]
+- **Content Verification**: [Found verifiable match in Guide/History OR "No verifiable match found"]
+- **Refined Command**: [Explicit command. Use 'UNKNOWN_PARAMETER' if verification fails.]
+- **Confidence**: [High (Verified/Obvious) / Low (Unverified Content/Ambiguous Target)]
+- **Reasoning**: [Step-by-step deduction. Explicitly state if TV Guide was used or if a default was applied.]
 """
 
 
@@ -1721,21 +1645,6 @@ Output exactly 2 short paragraphs:
 Do not add interpretations, guesses, or recommendations."""
 
 
-def _extract_confidence_from_intent_analysis(intent_analysis: Optional[str]) -> str:
-    """从意图分析文本中提取置信度（High/Low），默认返回Low"""
-    if not intent_analysis:
-        return "Low"
-    # 查找 Confidence 字段
-    confidence_match = re.search(
-        r"Confidence[：:]\s*(High|Low)",
-        intent_analysis,
-        re.IGNORECASE,
-    )
-    if confidence_match:
-        return confidence_match.group(1).capitalize()
-    return "Low"
-
-
 def build_cot_prompt(
     test_case: TestCaseInfo,
     user_preferences: Optional[Dict[str, Any]] = None,
@@ -1774,98 +1683,59 @@ def build_cot_prompt(
     intent_analysis_text = intent_analysis if intent_analysis else "(unavailable)"
     environment_text = environment_overview if environment_overview else "(unavailable)"
     device_state_focus_text = device_state_focus if device_state_focus else "(unavailable)"
-    
-    # 提取置信度
-    confidence = _extract_confidence_from_intent_analysis(intent_analysis)
-    
-    # 根据置信度选择不同的prompt策略
-    if confidence == "High":
-        return _build_high_confidence_prompt(test_case, intent_analysis_text, device_state_focus_text)
-    else:
-        return _build_low_confidence_prompt(test_case, intent_analysis_text, device_state_focus_text)
 
+    base_prompt = f"""You are the autonomous decision module of a smart home assistant.
+Your GOAL: Decide if you need to ask the user for clarification (`Need`) or proceed (`Do not need`).
 
-def _build_high_confidence_prompt(
-    test_case: TestCaseInfo,
-    intent_analysis_text: str,
-    device_state_focus_text: str,
-) -> str:
-    """高置信度prompt：简洁，鼓励执行"""
-    return f"""You are the decision module of a smart home assistant. Complete user objectives efficiently.
+**Decision Protocol (Zero-Shot Logic):**
+You must output `Do not need to use human_interaction_tool` ONLY if the `Refined Command` is **Complete**, **Verified**, and **Safe**.
 
-**Core Principle:** Execute user commands. Prefer action over inquiry when information is sufficient.
+**Logic 1: The Content Verification Gate**:
+- **Condition**: The request is classified as **Content Consumption** (watching/listening).
+- **Check**: Review the `Deep Intent Hypothesis`. Did it successfully find a specific, verified source (channel/app) in the Knowledge Base?
+- **Decision**:
+  - If `Refined Command` contains a specific, verified source -> **Do not need** (Proceed).
+  - If `Refined Command` contains "UNKNOWN" or relies on unverified assumptions (like keeping current input) -> **Need** (Ask clarification).
+  - *Rationale*: Guessing the wrong content is a failure.
 
-**Decision Rules:**
-1. **Information requests**: If command seeks to retrieve/report information -> **Do not need**.
-2. **Check markers**: If `Refined Command` contains `AMBIGUOUS_DEVICE` or `UNKNOWN_PARAMETER` -> **Need**.
-3. **Content requests**: If Content Consumption and source is verified -> **Do not need**; if unverified -> **Need**.
-4. **Device control**: If device and parameters are specified (no markers) -> **Do not need**. Apply safe defaults when direction is clear.
+**Logic 2: The Safe Default Exemption**:
+- **Condition**: The request is classified as **Device Control** (on/off/dim/temp) and a parameter is missing.
+- **Check**: Can a standard, harmless default apply? (e.g., "Turn on" -> 100% brightness; "Start" -> Normal Cycle).
+- **Decision**:
+  - If YES -> **Do not need** (Proceed with default).
+  - If NO (e.g., User asked for a specific "Favorite" that is unknown) -> **Need**.
 
-**Input:**
-- Command: "{test_case.user_command}"
-- Intent Analysis:
+**Execution Bias (apply when not conflicting with above):**
+- Align action direction with user-stated comfort/goal; reduce intensity when the user indicates overload, increase when indicating insufficiency.
+- If one high-confidence target is grounded (by name/location/VLM or as the only active relevant device), proceed; other similar devices do not block execution.
+- When direction is known but numeric parameters are missing, apply conservative defaults and avoid escalation; mark UNKNOWN only if the user asked for a specific-but-unknown preference.
+
+**Input Data:**
+- User Command: "{test_case.user_command}"
+- Deep Intent Hypothesis:
 {intent_analysis_text}
 - Device Context:
 {device_state_focus_text}
 
-**Process:**
-1. Check if information request -> If yes, **Do not need**.
-2. Check for `AMBIGUOUS_DEVICE` or `UNKNOWN_PARAMETER` in `Refined Command` -> If found, **Need**.
-3. Classify intent (Device Control / Content Consumption).
-4. For Content: if source verified -> **Do not need**; else -> **Need**.
-5. For Device Control: if markers absent and device/parameters specified -> **Do not need**.
+**Reasoning Process:**
+1.  **Classify Intent**: Is this Device Control or Content Consumption?
+2.  **Analyze Refinement**: Look at the `Refined Command` and `Content Verification` status.
+3.  **Apply Logic**: Use Logic 1 for Content, Logic 2 for Device Control.
+4.  **Final Verdict**: Determine if clarification is strictly required.
 
-**Output Format:**
-Reasoning: Step 1 - [...] Step 2 - [...] Step 3 - [...] Step 4 - [...] Step 5 - [...]
-
-Conclusion:
-Need / Do not need to use human_interaction_tool
-
-Reason: [Brief explanation]"""
-
-
-def _build_low_confidence_prompt(
-    test_case: TestCaseInfo,
-    intent_analysis_text: str,
-    device_state_focus_text: str,
-) -> str:
-    """低置信度prompt：谨慎但允许上下文消歧"""
-    return f"""You are the decision module of a smart home assistant. Exercise caution but utilize context when available.
-
-**Core Principle:** When confidence is low, prioritize accuracy. However, if context (preferences, device state, location) provides sufficient information to resolve ambiguity, proceed without asking.
-
-**Critical Checks (apply in order):**
-1. **Information requests**: If command retrieves/reports information -> **Do not need**.
-2. **Collective references**: If command uses "all", "every", "entire", "both", or plural nouns referring to groups -> **Do not need** (group target, not ambiguity).
-3. **Context-based resolution**: If `Refined Command` contains markers BUT context (user preferences, device state, location hints) clearly resolves the ambiguity -> **Do not need**.
-4. **Mandatory markers without context**: If `Refined Command` contains `AMBIGUOUS_DEVICE` or `UNKNOWN_PARAMETER` AND context cannot resolve -> **Need**.
-5. **Content verification**: If Content Consumption and source is unverified -> **Need**.
-6. **Subjective descriptors**: If subjective descriptor (e.g., "cozy", "vibrant") can be mapped from user preferences -> **Do not need**; if cannot be mapped -> **Need**.
-
-**Input:**
-- Command: "{test_case.user_command}"
-- Intent Analysis:
-{intent_analysis_text}
-- Device Context:
-{device_state_focus_text}
-
-**Process:**
-1. Check if information request -> If yes, **Do not need**.
-2. Check if collective reference ("all", "every", "entire", plural) -> If yes, **Do not need**.
-3. Check `Refined Command` for markers -> If present, evaluate if context resolves ambiguity:
-   - If user preferences/device state/location clearly identify device -> **Do not need**
-   - If context cannot resolve -> **Need**
-4. For Content: if source verified -> **Do not need**; else -> **Need**.
-5. For subjective descriptors: if mappable from preferences -> **Do not need**; else -> **Need**.
-6. Final verdict: Use context when available; ask only when truly ambiguous.
-
-**Output Format:**
-Reasoning: Step 1 - [...] Step 2 - [Check collective/context] Step 3 - [Evaluate markers with context] Step 4 - [...] Step 5 - [...] Step 6 - [...]
+Format your answer exactly as:
+Reasoning: Step 1 - Classify Intent: [...] Step 2 - Analyze Refinement: [...] Step 3 - Apply Logic: [...] Step 4 - Final Verdict: [...]
 
 Conclusion:
 Need / Do not need to use human_interaction_tool
 
-Reason: [Explanation of ambiguity status and context utilization]"""
+Reason:
+[Brief explanation focusing on verification status or safe defaults]
+
+IMPORTANT: The line after `Conclusion:` MUST be exactly either `Need to use human_interaction_tool` or `Do not need to use human_interaction_tool`.
+"""
+
+    return base_prompt
 
 
 def build_chain_planner_prompt(
@@ -2795,8 +2665,12 @@ def print_evaluation_summary(summary: Dict[str, Any]):
 
 
 if __name__ == "__main__":
-    # 使用新的模块化入口
-    from sage.testing.rag_cot.main import main
-    main()
+    # 示例使用
+    config = RAGCOTConfig(
+        llm_config=GPTConfig(model_name="gpt-4o-mini", temperature=0.0)
+    )
+    
+    summary = run_rag_cot_evaluation(config)
+    print_evaluation_summary(summary)
 
 

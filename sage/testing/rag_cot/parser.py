@@ -68,13 +68,31 @@ def parse_llm_response(response: str) -> Tuple[bool, str]:
     """
     解析LLM的响应，提取是否需要human_interaction_tool
     
+    支持两种格式：
+    1. 新的 VoI 格式：Decision: [ACT / ASK]
+    2. 旧的格式：Conclusion: Need / Do not need
+    
     Returns:
         (是否需要human_interaction_tool, 推理过程)
     """
     response_lower = response.lower()
     
+    # 优先解析新的 VoI 格式：Decision: ACT / ASK
+    decision_patterns = [
+        r'Decision[：:]\s*(ACT|ASK)',
+        r'\*{0,2}Decision:\*{0,2}\s*(ACT|ASK)',
+    ]
+    for pattern in decision_patterns:
+        decision_match = re.search(pattern, response, re.IGNORECASE | re.MULTILINE)
+        if decision_match:
+            decision_text = decision_match.group(1).upper().strip()
+            if decision_text == "ASK":
+                return True, response
+            elif decision_text == "ACT":
+                return False, response
+    
+    # 兼容旧的格式：Conclusion: Need / Do not need
     # 查找中文或英文结论部分（支持加粗标记 **Conclusion:** 或 Conclusion:）
-    # 匹配模式：结论/Conclusion 后面可能有冒号或中文冒号，可能有加粗标记，然后是要/不需要或Need/Do not need
     conclusion_patterns = [
         # 中文格式：结论：需要/不需要（可能有加粗标记 **）
         r'\*{0,2}结论[：:]\s*(需要|不需要)',

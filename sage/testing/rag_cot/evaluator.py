@@ -456,6 +456,7 @@ def evaluate_test_case(
             device_state_focus=device_state_focus,
             target_device_context=target_device_context,
             intent_reasoning_enabled=enable_intent_analysis,
+            effective_user_name=effective_user_name,
         )
         final_message = HumanMessage(content=final_prompt)
         final_response = llm([final_message])
@@ -497,6 +498,7 @@ def evaluate_test_case(
             weather_reports=weather_facts,
             device_state_focus=device_state_focus,
             intent_reasoning_enabled=enable_intent_analysis,
+            effective_user_name=effective_user_name,
         )
         final_message = HumanMessage(content=final_prompt)
         final_response = llm([final_message])

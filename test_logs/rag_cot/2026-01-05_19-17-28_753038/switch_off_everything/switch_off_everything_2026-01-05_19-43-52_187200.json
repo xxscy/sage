@@ -1,0 +1,47 @@
+{
+  "test_name": "switch_off_everything",
+  "user_command": "Abhisek : Heading off to work. Turn off all the non essential devices.",
+  "effective_user_name": "abhisek",
+  "types": [
+    "command_chaining",
+    "device_resolution",
+    "intent_resolution"
+  ],
+  "ground_truth_requires_human_interaction": false,
+  "predicted_requires_human_interaction": true,
+  "is_correct": false,
+  "preference_query": "Based on this command, infer what preference-related query should be used for retrieval: Abhisek : Heading off to work. Turn off all the non essential devices.",
+  "user_preferences": "There is no information available regarding Abhisek's preferences for non-essential devices in the provided user preferences or command history.",
+  "reasoning": "Decision: ASK  \nQuestion: Which devices do you consider non-essential that you would like to turn off?",
+  "llm_response": "Decision: ASK  \nQuestion: Which devices do you consider non-essential that you would like to turn off?",
+  "chain_history": [
+    {
+      "step": 1,
+      "action": "preference_lookup",
+      "reasoning": "To understand Abhisek's preferences regarding which devices are considered non-essential, I should look up preference-related information.",
+      "raw_response": "{\"thought\": \"To understand Abhisek's preferences regarding which devices are considered non-essential, I should look up preference-related information.\", \"action\": \"preference_lookup\", \"query\": \"Abhisek's preferences for non-essential devices\"}"
+    },
+    {
+      "step": 2,
+      "action": "preference_lookup",
+      "reasoning": "To understand which non-essential devices should be turned off, I need to gather information about Abhisek's device preferences.",
+      "raw_response": "{\"thought\": \"To understand which non-essential devices should be turned off, I need to gather information about Abhisek's device preferences.\", \"action\": \"preference_lookup\", \"query\": \"Abhisek's preferences for non-essential devices\"}"
+    },
+    {
+      "step": 3,
+      "action": "final_decision",
+      "reasoning": "I need to gather information about the devices that Abhisek considers non-essential to fulfill the command effectively. | action halted due to no new info; forcing final_decision",
+      "raw_response": "{\"thought\": \"I need to gather information about the devices that Abhisek considers non-essential to fulfill the command effectively.\", \"action\": \"preference_lookup\", \"query\": \"Abhisek's preferences for non-essential devices\"}"
+    }
+  ],
+  "device_lookup_notes": [
+    "[VLM] VLM ambiguous: top gap 0.013, top score 0.131, candidates=['8e20883f-c444-4edf-86bf-64e74c1d70e2', '415228e4-456c-44b1-8602-70f98c67fba8', '363f714d-e4fe-4052-a78c-f8c97542e709'], scores=8e20883f-c444-4edf-86bf-64e74c1d70e2:0.131, 415228e4-456c-44b1-8602-70f98c67fba8:0.118, 363f714d-e4fe-4052-a78c-f8c97542e709:0.109, 22e11820-64fa-4bed-ad8f-f98ef66de298:0.065, c4b4a179-6f75-48ed-a6b3-95080be6afc6:0.046"
+  ],
+  "intent_analysis": "Refined Command: Turn off all the non-essential devices.\nNeeds Clarification: YES\nMissing Information: User preferences for non-essential devices.\nConfidence: Low\nRisk Assessment: Medium",
+  "tv_guide_knowledge": "Channel 7 TSN 2 -> NBA: TOR vs ATL | Experience the excitement of basketball as the Toronto Raptors take on the Atlanta Hawks in an electrifying NBA game.\nChannel 10 Yes TV -> Jeopardy! | Test your knowledge and quick thinking with the legendary quiz show Jeopardy! as contestants engage in intellectual challenges to win prizes and acclaim.\nChannel 3 PBS Kids -> Sesame Street | Delight in educational and entertaining stories featuring beloved characters as they teach valuable lessons through songs, puppetry, and animation.\nChannel 6 TSN 1 -> NHL: MTL vs PHI | Witness intense ice hockey action as the Montreal Canadiens face off against the Philadelphia Flyers in a thrilling NHL matchup.\nChannel 8 Sportsnet -> NHL: DET vs COL | Tune in to catch the Detroit Red Wings battling the Colorado Avalanche in a high-stakes NHL ice hockey showdown.\nChannel 9 National Geographic -> Wildlife: Resurrection Island | Explore the mesmerizing ecosystem of Resurrection Island, where wildlife thrives and unfolds its captivating stories in the heart of nature.\nChannel 1 CBC -> CBC News | Stay informed with the latest breaking news, in-depth analysis, and investigative reports from around the world on CBC News.\nChannel 2 CTV -> Big Bang Theory | Join a group of quirky scientists and their humorous adventures as they navigate life, love, and the complexities of the universe in this popular sitcom.\nChannel 5 Food Network -> Jamie Oliver | Embark on a culinary journey with renowned chef Jamie Oliver as he shares delicious recipes, cooking tips, and food inspiration.\nChannel 4 BBC -> BBC News | Get a global perspective on current events, politics, and culture through comprehensive reporting, interviews, and analysis on BBC News.",
+  "weather_lookup_notes": [],
+  "failure_notes": [
+    "preference_lookup 'Abhisek's preferences for non-essential devices' yielded no new info"
+  ],
+  "vlm_notes": "VLM ambiguous: top gap 0.013, top score 0.131, candidates=['8e20883f-c444-4edf-86bf-64e74c1d70e2', '415228e4-456c-44b1-8602-70f98c67fba8', '363f714d-e4fe-4052-a78c-f8c97542e709'], scores=8e20883f-c444-4edf-86bf-64e74c1d70e2:0.131, 415228e4-456c-44b1-8602-70f98c67fba8:0.118, 363f714d-e4fe-4052-a78c-f8c97542e709:0.109, 22e11820-64fa-4bed-ad8f-f98ef66de298:0.065, c4b4a179-6f75-48ed-a6b3-95080be6afc6:0.046"
+}

@@ -1,0 +1,68 @@
+﻿序号,测试名称,用户命令,用户名,类型,是否正确,预测值,真实值,链式步骤数,推理
+1,play_something_for_kids,Abhisek : play something for the kids on the TV by the plant,abhisek,"device_resolution, intent_resolution",是,SKIP,SKIP,9,Decision: ACT
+2,put_on_something_funny,Dmitriy : play something funny on the TV by the plant,dmitriy,"device_resolution, intent_resolution",是,SKIP,SKIP,10,Decision: ACT
+3,setup_lights_for_dinner,Dmitriy : set up lights for dinner,dmitriy,"device_resolution, intent_resolution",是,SKIP,SKIP,15,Decision: ACT
+4,make_it_cozy_in_bedroom,Abhisek : Set the lights in the bedroom to a cozy setting,abhisek,"device_resolution, personalization, intent_resolution",是,SKIP,SKIP,15,Decision: ACT
+5,match_the_lights_to_weather,Dmitriy : set the light over the dining table to match my weather preference,dmitriy,"device_resolution, personalization, intent_resolution",否,ACT,SKIP,15,"Decision: ASK  
+Question: What are your specific weather preferences for the light over the dining t"
+6,turn_off_all_lights,Dmitriy : darken the entire house,dmitriy,"device_resolution, command_chaining, intent_resolution",是,SKIP,SKIP,15,"Decision: ACT  
+Question: "
+7,same_light_as_tv,Abhisek : Turn on the light,abhisek,"device_resolution, command_chaining",否,ACT,SKIP,11,"Decision: ASK  
+Question: Which light would you like to turn on? There are multiple light strips ava"
+8,turn_off_light_dim,Dmitriy : turn off all the lights that are dim,dmitriy,"device_resolution, command_chaining",是,SKIP,SKIP,15,"Decision: ACT  
+"
+9,getting_call_tv_too_loud,"Amal : I am getting a call, adjust the volume of the TV",amal,"device_resolution, intent_resolution",否,ACT,SKIP,5,"Decision: ASK  
+Question: Which TV would you like to adjust the volume for, the Samsung The Frame (4"
+10,dishes_dirty_set_appropriate_mode,"Amal : Dishes are too greasy, set an appropriate mode in the dishwasher.",amal,intent_resolution,是,SKIP,SKIP,14,Decision: ACT
+11,turn_on_frame_tv,Amal: turn on the Frame TV to Channel 5,amal,simple,否,ACT,SKIP,2,"Decision: ASK  
+Question: Which TV would you like to turn on to Channel 5, the Samsung The Frame (49"
+12,put_something_informative,Amal : Put something informative on the tv by the plant.,amal,"device_resolution, personalization, intent_resolution",否,ACT,SKIP,10,"Decision: ASK  
+Question: Which TV would you like me to use to put the documentary on? The Samsung T"
+13,read_all_lights,Amal : Are all the lights on?,amal,simple,是,SKIP,SKIP,14,"Decision: ACT  
+Question: "
+14,change_light_colors_conditioned_on_favourite_team,"Abhisek : Change the lights of the house to represent my favourite hockey team. Use the lights by the TV, the dining room and the fireplace.",abhisek,"device_resolution, command_chaining, personalization, intent_resolution",是,SKIP,SKIP,9,"Decision: ACT  
+Question: "
+15,is_fridge_open,Amal : Is the fridge door open?,amal,simple,是,SKIP,SKIP,14,"Decision: ACT  
+Question: "
+16,set_bedroom_light_for_sleeping,Amal : I am going to sleep. Change the bedroom light accordingly.,amal,"device_resolution, personalization, intent_resolution",是,SKIP,SKIP,9,Decision: ACT
+17,start_dishwasher,Abhisek : Start the dishwasher,abhisek,simple,是,SKIP,SKIP,9,Decision: ACT
+18,turn_off_tvs_turn_on_fireplace_light,Dmitriy : turn off all the TVs and switch on the fireplace light,dmitriy,"device_resolution, command_chaining",是,SKIP,SKIP,8,Decision: ACT
+19,control_fridge_temp,Abhisek : Change the fridge internal temperature to 5 degrees Celsius,abhisek,simple,是,SKIP,SKIP,14,Decision: ACT
+20,frige_door_light,abhisek : turn on the light in the dining room when the I open the fridge,abhisek,persistence,是,SKIP,SKIP,8,Decision: ACT
+21,turn_on_all_lights,Abhisek : Turn on all the lights.,abhisek,simple,是,SKIP,SKIP,15,"Decision: ACT  
+Question: "
+22,turn_on_bedroom_light_dishwasherstate,abhisek : turn on light by the nightstand when the dishwasher is done,abhisek,"device_resolution, persistence",是,SKIP,SKIP,10,Decision: ACT
+23,query_fridge_temp,Abhisek : What is the fridge temperature?,abhisek,simple,是,SKIP,SKIP,9,Decision: ACT
+24,increase_volume_with_dishwasher_on,abhisek : increase the volume of the TV by the credenza whenever the dishwasher is running,abhisek,"device_resolution, persistence",是,SKIP,SKIP,6,Decision: ACT
+25,put_the_game_on_amal,amal : put the game on the tv by the credenza,amal,"device_resolution, personalization, intent_resolution",是,SKIP,SKIP,7,Decision: ACT
+26,set_bedroom_light_fav_color,Amal : Set bedroom light to my favourite color,amal,"device_resolution, intent_resolution, human_interaction",是,ACT,ACT,15,"Decision: ASK  
+Question: What is your favorite color?"
+27,put_the_game_on_abhisek,abhisek : put the game on the tv by the credenza,abhisek,"device_resolution, personalization, intent_resolution",否,ACT,SKIP,6,"Decision: ASK  
+Question: Which game would you like to put on the TV?"
+28,put_the_game_on_dmitriy,dmitriy : put the game on the tv by the credenza,dmitriy,"device_resolution, personalization, intent_resolution, human_interaction",否,SKIP,ACT,5,Decision: ACT
+29,long_day_unwind,"dmitriy : its been a long, tiring day. Can you play something light and entertaining on the TV by the plant",dmitriy,"device_resolution, personalization, intent_resolution",是,SKIP,SKIP,6,Decision: ACT
+30,turn_on_tv,Amal: turn on the TV,amal,device_resolution,否,ACT,SKIP,6,"Decision: ASK  
+Question: Which TV would you like to turn on, the Samsung The Frame (49) or the Sams"
+31,redonkulous_living_room,Dmitriy : Make the living room look redonkulous!,dmitriy,"device_resolution, intent_resolution, human_interaction",是,ACT,ACT,6,"Decision: ASK  
+Question: How would you like the living room to look redonkulous? Do you have specif"
+32,switch_off_everything,Abhisek : Heading off to work. Turn off all the non essential devices.,abhisek,"device_resolution, command_chaining, intent_resolution",否,ACT,SKIP,6,"Decision: ASK  
+Question: Could you please specify which devices you consider non-essential?"
+33,get_current_channel,Amal: what channel is playing on the TV?,amal,device_resolution,否,ACT,SKIP,5,"Decision: ASK  
+Question: Which TV would you like to know the channel for, the Samsung The Frame (49"
+34,turn_it_off,Abhisek : Turn it off.,abhisek,"device_resolution, intent_resolution, human_interaction",是,ACT,ACT,15,"Decision: ASK  
+Question: Which device would you like to turn off?"
+35,room_too_bright,Amal : It is too bright in the dining room.,amal,"device_resolution, intent_resolution",是,SKIP,SKIP,4,Decision: ACT
+36,turn_on_bedside_light,Amal: turn on the light by the bed,amal,device_resolution,是,SKIP,SKIP,10,Decision: ACT
+37,set_christmassy_lights_by_fireplace,Dmitriy : Setup a christmassy mood by the fireplace.,dmitriy,"device_resolution, intent_resolution",是,SKIP,SKIP,15,Decision: ACT
+38,check_dishwasher_state,Dmitriy: what is the current phase of the dish washing cycle?,dmitriy,device_resolution,是,SKIP,SKIP,6,Decision: ACT
+39,dim_fireplace_lamp,Abhisek : dim the lights by the fire place to a third of the current value,abhisek,"device_resolution, intent_resolution",是,SKIP,SKIP,13,Decision: ACT
+40,tv_off_lights_on_persist,Amal: when the TV  by the credenza turns off turn on the light by the bed,amal,"device_resolution, persistence",是,SKIP,SKIP,5,Decision: ACT
+41,lower_tv_volume,Amal : Lower the volume of the TV by the light,amal,device_resolution,是,SKIP,SKIP,9,Decision: ACT
+42,switch_to_other_tv,Amal: move this channel to the other TV and turn this one off,amal,"device_resolution, command_chaining, intent_resolution",否,ACT,SKIP,7,"Decision: ASK  
+Question: Which channel should be moved from the Samsung 8 Series (82) to the Samsun"
+43,check_freezer_temp,Abhisek : what is the current temperature of the freezer?,abhisek,device_resolution,是,SKIP,SKIP,15,Decision: ACT
+44,put_the_game_on_dim_the_lights,Amal: put the game on the tv by the credenza and dim the lights by the TV,amal,"device_resolution, command_chaining, personalization, intent_resolution",是,SKIP,SKIP,7,Decision: ACT
+45,is_main_tv_on,Amal : is the TV by the credenza on?,amal,device_resolution,否,ACT,SKIP,12,"Decision: ASK  
+Question: Which TV are you referring to, the Samsung The Frame (49) or the Samsung 8"
+46,memory_weather_test,Abhisek : I am going to visit my mom. Should I bring an umbrella?,abhisek,personalization,否,ACT,SKIP,12,"Decision: ASK  
+Question: What is the weather like at your mom's place?"
